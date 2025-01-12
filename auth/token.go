@@ -7,20 +7,34 @@ import (
     "log"
     "net/http"
     "net/url"
-    "os"
     "time"
 )
 
 
 // fetch authentication tokens from server
-func GetAuthToken(code, clientId, clientSecret string) (AuthData, error) {
+func GetAuthToken(code string) (AuthData, error) {
+    clientId, err := GetClientId()
+    if err != nil {
+        return AuthData{}, err
+    }
+
+    clientSecret, err := GetClientSecret()
+    if err != nil {
+        return AuthData{}, err
+    }
+
+    redirectUri, err := GetRedirectUri()
+    if err != nil {
+        return AuthData{}, err
+    }
+
     data := url.Values{
         "grant_type":    {"authorization_code"},
         "client_id":     {clientId},
         "client_secret": {clientSecret},
         "code":          {code},
         "audience":      {Audience},
-        "redirect_uri":  {RedirectUri},
+        "redirect_uri":  {redirectUri},
     }
 
     log.Printf("Sending request to: %s", TokenEp)
@@ -45,11 +59,11 @@ func GetAuthToken(code, clientId, clientSecret string) (AuthData, error) {
     return authData, nil
 }
 
-// refreshe the auth token using the provided token
+// refresh the auth token using the provided token
 func RefreshAuthToken(refreshToken string) (AuthData, error) {
-    clientId := os.Getenv("TESLA_CLIENT_ID")
-    if clientId == "" {
-        return AuthData{}, fmt.Errorf("tesla_client_id environment variable not set")
+    clientId, err := GetClientId()
+    if err != nil {
+        return AuthData{}, err
     }
 
     data := url.Values{}
