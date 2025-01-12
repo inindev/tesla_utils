@@ -1,4 +1,8 @@
-
+//
+// Copyright (c) 2025, John Clark <inindev@gmail.com>
+//
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+//
 package main
 
 import (
