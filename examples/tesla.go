@@ -51,6 +51,8 @@ var CarCommand = map[string]func(*vehicle.Vehicle, context.Context) error{
     "ventwindows":     func(v *vehicle.Vehicle, ctx context.Context) error { return v.VentWindows(ctx) },
     "chargeportclose": func(v *vehicle.Vehicle, ctx context.Context) error { return v.ChargePortClose(ctx) },
     "chargeportopen":  func(v *vehicle.Vehicle, ctx context.Context) error { return v.ChargePortOpen(ctx) },
+    "climate-on":      func(v *vehicle.Vehicle, ctx context.Context) error { return v.ClimateOn(ctx) },
+    "climate-off":     func(v *vehicle.Vehicle, ctx context.Context) error { return v.ClimateOff(ctx) },
 }
 
 // executes the specified vehicle command
@@ -63,6 +65,22 @@ func executeCommand(ctx context.Context, car *vehicle.Vehicle, cmd Command) erro
     }
 
     cmd.Name = strings.ToLower(cmd.Name) // case insensitive
+
+    // handle the climate command with parameters
+    if cmd.Name == "climate" {
+        if len(cmd.Params) == 0 {
+            return fmt.Errorf("climate command requires a parameter (on/off/true/false)")
+        }
+        switch cmd.Params[0] {
+        case "on", "true":
+            cmd.Name = "climate-on"
+        case "off", "false":
+            cmd.Name = "climate-off"
+        default:
+            return fmt.Errorf("invalid parameter for climate command: %s", cmd.Params[0])
+        }
+    }
+
     op, ok := CarCommand[cmd.Name]
     if !ok {
         return fmt.Errorf("unknown command: %s", cmd.Name)
