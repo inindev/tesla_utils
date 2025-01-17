@@ -52,7 +52,7 @@ func main() {
     }
 
     // check if the auth cache file exists
-    if _, statErr := os.Stat(auth.CacheFilePath()); statErr == nil {
+    if _, statErr := os.Stat(auth.AuthCacheFilePath()); statErr == nil {
         if err := auth.ManageToken(); err != nil {
             log.Printf("failed to manage token: %v", err)
             os.Exit(5)

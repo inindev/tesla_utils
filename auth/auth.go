@@ -25,7 +25,7 @@ type AuthData struct {
 
 // read and return authentication data from a json file
 func LoadAuthData() (AuthData, error) {
-    file, err := os.Open(CacheFilePath())
+    file, err := os.Open(AuthCacheFilePath())
     if err != nil {
         return AuthData{}, fmt.Errorf("auth cache file not found or cannot be opened: %v", err)
     }
@@ -64,11 +64,11 @@ func SaveAuthData(auth AuthData) error {
     }
 
     // Ensure correct permissions before writing
-    if err := ensureFilePermissions(CacheFilePath(), 0600); err != nil {
+    if err := ensureFilePermissions(AuthCacheFilePath(), 0600); err != nil {
         return err
     }
 
-    if err := ioutil.WriteFile(CacheFilePath(), authBytes, 0600); err != nil {
+    if err := ioutil.WriteFile(AuthCacheFilePath(), authBytes, 0600); err != nil {
         return fmt.Errorf("failed to save auth data: %v", err)
     }
 
