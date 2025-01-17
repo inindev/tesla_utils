@@ -64,13 +64,14 @@ func main() {
     }
 
     // generate new auth
-    fmt.Printf("\npaste into browser to generate a new NA_xxx auth token\n")
     state := auth.GetRandomCodeword()
     oauthUrl, err := auth.GenOauthUrl(state)
     if err != nil {
         log.Printf("failed to generate oauth url: %v", err)
         os.Exit(7)
     }
+
+    fmt.Printf("\npaste into browser to generate a new NA_xxx auth token\n")
     fmt.Printf("\n%s\n%s\n%s\n\n", state, strings.Repeat("~", len(state)), oauthUrl)
 }
 

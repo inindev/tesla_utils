@@ -17,26 +17,41 @@ const (
     TokenEp       = "https://auth.tesla.com/oauth2/v3/token"
     Audience      = "https://fleet-api.prd.na.vn.cloud.tesla.com"
 
-    authCacheFile = ".tesla_auth_cache.json"
+    teslaCfgDir   = ".tesla"  // $HOME/.tesla
+    authCacheFile = "auth_cache.json"
 
     // tesla environment variable names
     teslaClientId     = "TESLA_CLIENT_ID"      // 00000000-0000-0000-0000-000000000000
     teslaClientSecret = "TESLA_CLIENT_SECRET"  //
-    teslaKeyFile      = "TESLA_KEY_FILE"       // $HOME/.tesla_keys/private.key
+    teslaKeyFile      = "TESLA_KEY_FILE"       // $HOME/.tesla/private.key
     teslaVin          = "TESLA_VIN"            // 5YJ00000000000000
     teslaRedirectUri  = "TESLA_REDIRECT_URI"   // https://auth.<yourdomain>.com/auth/callback
 )
 
 var (
-    cacheFilePath string
+    teslaCfgDirPath string
+    cacheFilePath   string
 )
+
 
 func init() {
     homeDir, err := os.UserHomeDir()
     if err != nil {
         panic(err)
     }
-    cacheFilePath = filepath.Join(homeDir, authCacheFile)
+
+    // Create the .tesla directory if it doesn't exist
+    teslaCfgDirPath = filepath.Join(homeDir, teslaCfgDir)
+    if err := os.MkdirAll(teslaCfgDirPath, 0700); err != nil {
+        panic(err)
+    }
+
+    cacheFilePath = filepath.Join(teslaCfgDirPath, authCacheFile)
+}
+
+// path to the Tesla configuration directory
+func TeslaCfgDirPath() string {
+    return teslaCfgDirPath
 }
 
 // path to the auth cache file
@@ -73,7 +88,7 @@ func GetVin() (string, error) {
     return getEnvVar(teslaVin)
 }
 
-// telsla_redirect_uri environment variable
+// tesla_redirect_uri environment variable
 func GetRedirectUri() (string, error) {
     return getEnvVar(teslaRedirectUri)
 }
