@@ -38,24 +38,6 @@ func LoadAuthData() (AuthData, error) {
     return auth, nil
 }
 
-// ensureFilePermissions checks if the file exists and has correct permissions, adjusts if necessary
-func ensureFilePermissions(filePath string, desiredPerm os.FileMode) error {
-    info, err := os.Stat(filePath)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return nil // file does not exist, permissions will be set by write operation
-        }
-        return fmt.Errorf("error checking file status: %v", err)
-    }
-
-    if info.Mode().Perm() != desiredPerm {
-        if err := os.Chmod(filePath, desiredPerm); err != nil {
-            return fmt.Errorf("error setting file permissions: %v", err)
-        }
-    }
-    return nil
-}
-
 // write the authentication data to a json file with restricted permissions
 func SaveAuthData(auth AuthData) error {
     authBytes, err := json.MarshalIndent(auth, "", "  ")
@@ -63,8 +45,7 @@ func SaveAuthData(auth AuthData) error {
         return fmt.Errorf("error marshalling json: %v", err)
     }
 
-    // Ensure correct permissions before writing
-    if err := ensureFilePermissions(AuthCacheFilePath(), 0600); err != nil {
+    if err := EnsureFilePermissions(AuthCacheFilePath(), 0600); err != nil {
         return err
     }
 

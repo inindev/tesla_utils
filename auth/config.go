@@ -11,6 +11,7 @@ import (
     "path/filepath"
     "io/ioutil"
     "encoding/json"
+    "strings"
 )
 
 const (
@@ -79,7 +80,7 @@ func getConfigValue(varName string) (string, error) {
     // not found in environment, read from config file
     config, err := readConfig()
     if err == nil {
-        if val, ok := config[varName]; ok {
+        if val, ok := config[strings.ToLower(varName)]; ok {
             return val, nil
         }
     }
@@ -103,6 +104,51 @@ func readConfig() (map[string]string, error) {
         return nil, fmt.Errorf("failed to parse config file: %v", err)
     }
     return config, nil
+}
+
+// create config file from params
+func WriteConfig(clientID, clientSecret, keyFile, vin, redirectURI string) error {
+    config := map[string]string{
+        strings.ToLower(teslaClientId):     clientID,
+        strings.ToLower(teslaClientSecret): clientSecret,
+        strings.ToLower(teslaKeyFile):      keyFile,
+        strings.ToLower(teslaVin):          vin,
+        strings.ToLower(teslaRedirectUri):  redirectURI,
+    }
+
+    data, err := json.MarshalIndent(config, "", "  ")
+    if err != nil {
+        return fmt.Errorf("failed to marshal config to JSON: %v", err)
+    }
+
+    // ensure correct file permissions before writing
+    if err := EnsureFilePermissions(configFilePath, 0600); err != nil {
+        return err
+    }
+
+    if err := ioutil.WriteFile(configFilePath, data, 0600); err != nil {
+        return fmt.Errorf("failed to write config file: %v", err)
+    }
+
+    return nil
+}
+
+// check if the file exists and has correct permissions, adjusts if necessary
+func EnsureFilePermissions(filePath string, desiredPerm os.FileMode) error {
+    info, err := os.Stat(filePath)
+    if err != nil {
+        if os.IsNotExist(err) {
+            return nil // file does not exist
+        }
+        return fmt.Errorf("error checking file status: %v", err)
+    }
+
+    if info.Mode().Perm() != desiredPerm {
+        if err := os.Chmod(filePath, desiredPerm); err != nil {
+            return fmt.Errorf("error setting file permissions: %v", err)
+        }
+    }
+    return nil
 }
 
 // tesla_client_id environment variable
