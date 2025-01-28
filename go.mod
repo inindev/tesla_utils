@@ -1,4 +1,4 @@
-module tesla_utils
+module github.com/inindev/tesla_utils
 
 go 1.23.4
 

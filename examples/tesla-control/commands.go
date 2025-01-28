@@ -486,232 +486,232 @@ func init() {
 			},
 		},
 		"get-drivers": &Command{
-		    help:             "Retrieve drivers associated with the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve drivers associated with the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/drivers", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching drivers for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/drivers", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching drivers for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-eligible-subscriptions": &Command{
-		    help:             "Retrieve eligible subscriptions for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve eligible subscriptions for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/dx/vehicles/subscriptions/eligibility?vin=%s", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching eligible subscriptions for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/dx/vehicles/subscriptions/eligibility?vin=%s", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching eligible subscriptions for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-eligible-upgrades": &Command{
-		    help:             "Retrieve eligible upgrades for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve eligible upgrades for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/dx/vehicles/upgrades/eligibility?vin=%s", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching eligible upgrades for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/dx/vehicles/upgrades/eligibility?vin=%s", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching eligible upgrades for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-fleet-telemetry-config": &Command{
-		    help:             "Retrieve the fleet telemetry configuration for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve the fleet telemetry configuration for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/fleet_telemetry_config", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching fleet telemetry config for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/fleet_telemetry_config", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching fleet telemetry config for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-nearby-charging-sites": &Command{
-		    help:             "Retrieve nearby charging sites for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve nearby charging sites for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/nearby_charging_sites", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching nearby charging sites for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/nearby_charging_sites", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching nearby charging sites for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-options": &Command{
-		    help:             "Retrieve vehicle options based on the VIN from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve vehicle options based on the VIN from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/dx/vehicles/options?vin=%s", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching vehicle options for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/dx/vehicles/options?vin=%s", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching vehicle options for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-recent-alerts": &Command{
-		    help:             "Retrieve recent alerts for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve recent alerts for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/recent_alerts", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching recent alerts for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/recent_alerts", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching recent alerts for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-release-notes": &Command{
-		    help:             "Retrieve release notes for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve release notes for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/release_notes", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching release notes for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/release_notes", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching release notes for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-service-data": &Command{
-		    help:             "Retrieve service data for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve service data for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/service_data", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching service data for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/service_data", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching service data for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-share-invites": &Command{
-		    help:             "Retrieve share invites for the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve share invites for the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/invitations", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching share invites for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/invitations", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching share invites for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-vehicle": &Command{
-		    help:             "Retrieve basic details about the vehicle from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Retrieve basic details about the vehicle from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching vehicle details for VIN %s: %w", vin, err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching vehicle details for VIN %s: %w", vin, err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"get-vehicle-data": &Command{
-		    help:             "Fetch vehicle data from the Fleet API.",
-		    requiresAuth:     false,
-		    requiresFleetAPI: true,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        vin := car.VIN()
-		        if vin == "" {
-		            return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
-		        }
+			help:             "Fetch vehicle data from the Fleet API.",
+			requiresAuth:     false,
+			requiresFleetAPI: true,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				vin := car.VIN()
+				if vin == "" {
+					return fmt.Errorf("VIN is required for this command but not available. Please ensure the vehicle is properly initialized.")
+				}
 
-		        endpoint := fmt.Sprintf("api/1/vehicles/%s/vehicle_data", vin)
-		        reply, err := acct.Get(ctx, endpoint)
-		        if err != nil {
-		            return fmt.Errorf("error fetching vehicle data: %w", err)
-		        }
-		        fmt.Println(string(reply))
-		        return nil
-		    },
+				endpoint := fmt.Sprintf("api/1/vehicles/%s/vehicle_data", vin)
+				reply, err := acct.Get(ctx, endpoint)
+				if err != nil {
+					return fmt.Errorf("error fetching vehicle data: %w", err)
+				}
+				fmt.Println(string(reply))
+				return nil
+			},
 		},
 		"post": &Command{
 			help:             "POST to ENDPOINT the contents of FILE. Hostname will be taken from -config.",
@@ -1460,13 +1460,13 @@ func init() {
 			},
 		},
 		"exit": &Command{
-		    help:             "Exit the program",
-		    requiresAuth:     false,
-		    requiresFleetAPI: false,
-		    handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
-		        os.Exit(0)
-		        return nil // technically unreachable, but good practice to include it
-		    },
+			help:             "Exit the program",
+			requiresAuth:     false,
+			requiresFleetAPI: false,
+			handler: func(ctx context.Context, acct *account.Account, car *vehicle.Vehicle, args map[string]string) error {
+				os.Exit(0)
+				return nil // technically unreachable, but good practice to include it
+			},
 		},
 	}
 }
@@ -1482,34 +1482,34 @@ func customCompleter(line string) []string {
 }
 
 func ContextSensitiveHelp(input string) {
-    if strings.TrimSpace(input) == "" {
-        // collect all command names
-        keys := make([]string, 0, len(commands))
-        for cmdName := range commands {
-            keys = append(keys, cmdName)
-        }
+	if strings.TrimSpace(input) == "" {
+		// collect all command names
+		keys := make([]string, 0, len(commands))
+		for cmdName := range commands {
+			keys = append(keys, cmdName)
+		}
 
-        // sort the command names
-        sort.Strings(keys)
+		// sort the command names
+		sort.Strings(keys)
 
-        // print sorted commands
-        for _, cmdName := range keys {
-            fmt.Printf("  %s\n", cmdName)
-        }
-        return
-    }
+		// print sorted commands
+		for _, cmdName := range keys {
+			fmt.Printf("  %s\n", cmdName)
+		}
+		return
+	}
 
-    for cmdName, cmd := range commands {
-        if strings.HasPrefix(cmdName, input) {
-            fmt.Printf("Help for command %s:\n%s\n", cmdName, cmd.help)
-            fmt.Println("Arguments:")
-            for _, arg := range cmd.args {
-                fmt.Printf("  %s: %s\n", arg.name, arg.help)
-            }
-            return
-        }
-    }
-    fmt.Println("No matching command found. Use tab for auto-completion.")
+	for cmdName, cmd := range commands {
+		if strings.HasPrefix(cmdName, input) {
+			fmt.Printf("Help for command %s:\n%s\n", cmdName, cmd.help)
+			fmt.Println("Arguments:")
+			for _, arg := range cmd.args {
+				fmt.Printf("  %s: %s\n", arg.name, arg.help)
+			}
+			return
+		}
+	}
+	fmt.Println("No matching command found. Use tab for auto-completion.")
 }
 
 func InteractiveCommandBuilding(acct *account.Account, car *vehicle.Vehicle) {
@@ -1534,10 +1534,10 @@ func InteractiveCommandBuilding(acct *account.Account, car *vehicle.Vehicle) {
 		if len(args) > 0 {
 			cmdName := args[0]
 
-            // check for exit command
-            if cmdName == "exit" {
-                os.Exit(0)
-            }
+			// check for exit command
+			if cmdName == "exit" {
+				os.Exit(0)
+			}
 
 			// check for help command
 			if cmdName == "help" {
