@@ -27,5 +27,5 @@ go.work.sum
 # cached data
 .tesla*
 
-# files
-tesla-control/tesla-control
+# binary files
+examples/tesla-control/tesla-control
