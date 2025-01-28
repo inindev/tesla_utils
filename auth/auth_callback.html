@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Callback Details</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin-top: 2em;
+            margin-left: 2em;
+        }
+        .param-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            width: 40em;
+            box-sizing: border-box;
+            overflow-x: auto;
+            display: block;
+        }
+        .param-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        .copy-icon {
+            cursor: pointer;
+            width: 1em;
+            height: 1em;
+            fill: currentColor;
+        }
+        .copy-icon:hover {
+            fill: #007bff;
+        }
+        .wordmark {
+            inline-size: 12em;
+            margin-bottom: 1em;
+        }
+        .popup {
+            position: absolute;
+            background-color: #007bff;
+            color: white;
+            font-size: smaller;
+            padding: 0.4em 0.8em;
+            border-radius: 0.4em;
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+    <script>
+        function copyToClipboard(text, event) {
+            navigator.clipboard.writeText(text).then(() => {
+                // show the popup
+                const popup = document.createElement('div');
+                popup.className = 'popup';
+                popup.textContent = 'copied to clipboard';
+                document.body.appendChild(popup);
+
+                // get the position of the click
+                const rect = event.target.getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+                // position the popup
+                popup.style.left = (rect.left + scrollLeft + rect.width + 10) + 'px'; // position to the right of the icon with a small offset
+                popup.style.top = (rect.top + scrollTop - 20) + 'px'; // position above the icon with a small offset
+                popup.style.display = 'block';
+
+                // hide the popup after 1.5 seconds
+                setTimeout(() => {
+                    popup.remove();
+                }, 1500);
+            }).catch(err => {
+                console.error('failed to copy: ', err);
+            });
+        }
+
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            params.forEach((value, key) => {
+                let displayValue = key === 'issuer' && value ? decodeURIComponent(value) : (value || 'Not Provided');
+                const paramBox = document.createElement('div');
+                paramBox.className = 'param-box';
+                paramBox.innerHTML =
+                    '<div class="param-title">' +
+                        key +
+                        '<span class="copy-icon" onclick="copyToClipboard(\'' + displayValue.replace(/'/g, "\\'") + '\', event)">' +
+                            '<svg viewBox="0 0 24 24" aria-hidden="true"><g><path d="M19.5 2C20.88 2 22 3.12 22 4.5v11c0 1.21-.86 2.22-2 2.45V4.5c0-.28-.22-.5-.5-.5H6.05c.23-1.14 1.24-2 2.45-2h11zm-4 4C16.88 6 18 7.12 18 8.5v11c0 1.38-1.12 2.5-2.5 2.5h-11C3.12 22 2 20.88 2 19.5v-11C2 7.12 3.12 6 4.5 6h11zM4 19.5c0 .28.22.5.5.5h11c.28 0 .5-.22.5-.5v-11c0-.28-.22-.5-.5-.5h-11c-.28 0-.5.22-.5.5v11z"></path></g></svg>' +
+                        '</span>' +
+                    '</div>' +
+                    '<div>' + displayValue + '</div>';
+                document.body.appendChild(paramBox);
+            });
+        }
+    </script>
+</head>
+<body>
+    <svg class="wordmark" viewBox="0 0 342 35" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M0 .1a9.7 9.7 0 0 0 7 7h11l.5.1v27.6h6.8V7.3L26 7h11a9.8 9.8 0 0 0 7-7H0zm238.6 0h-6.8v34.8H263a9.7 9.7 0 0 0 6-6.8h-30.3V0zm-52.3 6.8c3.6-1 6.6-3.8 7.4-6.9l-38.1.1v20.6h31.1v7.2h-24.4a13.6 13.6 0 0 0-8.7 7h39.9v-21h-31.2v-7zm116.2 28h6.7v-14h24.6v14h6.7v-21h-38zM85.3 7h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7m0 13.8h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7m0 14.1h26a9.6 9.6 0 0 0 7.1-7H78.3a9.6 9.6 0 0 0 7 7M308.5 7h26a9.6 9.6 0 0 0 7-7h-40a9.6 9.6 0 0 0 7 7"></path></svg>
+    <h2>Authentication Callback Details</h2>
+</body>
+</html>
