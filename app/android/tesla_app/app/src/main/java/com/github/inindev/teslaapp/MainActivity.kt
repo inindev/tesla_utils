@@ -34,22 +34,22 @@ class MainActivity : ComponentActivity() {
             TeslaAppTheme {
                 val navController = rememberNavController()
                 val navHostController = navController as NavHostController
+                val secureStorage = SecureStorage(this)
 
-                // ensure we're using navhostcontroller, which is recommended for navhost
-                NavGraph(navHostController)
+                NavGraph(navHostController, secureStorage)
             }
         }
     }
 }
 
 @Composable
-fun NavGraph(navController: NavHostController) {
+fun NavGraph(navController: NavHostController, secureStorage: SecureStorage) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             MainScreen(navController)
         }
         composable("settings") {
-            SettingsScreen(navController)
+            SettingsScreen(navController, secureStorage)
         }
     }
 }

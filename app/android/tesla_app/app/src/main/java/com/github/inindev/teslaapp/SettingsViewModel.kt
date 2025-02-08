@@ -7,54 +7,62 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class SettingsViewModel : ViewModel() {
-    private val _settings = MutableStateFlow(AppSettings())
-    val settings: StateFlow<AppSettings> = _settings.asStateFlow()
+class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() {
+    private val _settings = MutableStateFlow(Settings())
+    val settings: StateFlow<Settings> = _settings.asStateFlow()
 
-    data class AppSettings(
-        var clientId: String = "",
-        var clientSecret: String = "",
-        var vin: String = "",
-        var baseUrl: String = "",
+    data class Settings(
+        val clientId: String = "",
+        val clientSecret: String = "",
+        val vin: String = "",
+        val baseUrl: String = ""
     )
 
-    fun updateClientId(newClientId: String) {
+    init {
+        loadSettings()
+    }
+
+    // settings management
+    internal fun loadSettings() {
         viewModelScope.launch {
-            _settings.value = _settings.value.copy(clientId = newClientId)
-            saveSettings()
+            _settings.value = Settings(
+                clientId = secureStorage.retrieveClientId(),
+                clientSecret = secureStorage.retrieveClientSecret(),
+                vin = secureStorage.retrieveVin(),
+                baseUrl = secureStorage.retrieveBaseUrl()
+            )
         }
+    }
+
+    private fun saveSettings(settings: Settings) {
+        secureStorage.storeClientId(settings.clientId)
+        secureStorage.storeClientSecret(settings.clientSecret)
+        secureStorage.storeVin(settings.vin)
+        secureStorage.storeBaseUrl(settings.baseUrl)
+    }
+
+    private fun updateSetting(update: (Settings) -> Settings) {
+        viewModelScope.launch {
+            val newSettings = update(_settings.value)
+            _settings.value = newSettings
+            saveSettings(newSettings)
+        }
+    }
+
+    // update methods
+    fun updateClientId(newClientId: String) {
+        updateSetting { it.copy(clientId = newClientId) }
     }
 
     fun updateClientSecret(newClientSecret: String) {
-        viewModelScope.launch {
-            _settings.value = _settings.value.copy(clientSecret = newClientSecret)
-            saveSettings()
-        }
+        updateSetting { it.copy(clientSecret = newClientSecret) }
     }
 
     fun updateVin(newVin: String) {
-        viewModelScope.launch {
-            _settings.value = _settings.value.copy(vin = newVin)
-            saveSettings()
-        }
+        updateSetting { it.copy(vin = newVin) }
     }
 
     fun updateBaseUrl(newBaseUrl: String) {
-        viewModelScope.launch {
-            _settings.value = _settings.value.copy(baseUrl = newBaseUrl)
-            saveSettings()
-        }
-    }
-
-    // function to load settings
-    fun loadSettings() {
-        viewModelScope.launch {
-            // load settings from encrypted persistent storage
-        }
-    }
-
-    // function to save settings
-    private fun saveSettings() {
-        // save settings to encrypted persistent storage
+        updateSetting { it.copy(baseUrl = newBaseUrl) }
     }
 }

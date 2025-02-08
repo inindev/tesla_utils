@@ -22,7 +22,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 
 @Composable
-fun SettingsScreen(navController: NavHostController, viewModel: SettingsViewModel = viewModel()) {
+fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorage) {
+    val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModelFactory(secureStorage))
+
     val uriHandler = LocalUriHandler.current
 
     // load settings when the screen is composed
