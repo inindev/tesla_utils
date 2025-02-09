@@ -25,6 +25,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.github.inindev.teslaapp.ui.theme.TeslaAppTheme
+import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,8 +58,6 @@ fun NavGraph(navController: NavHostController, secureStorage: SecureStorage) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavHostController) {
-    val teslaRed = Color(0xFFCC0000)
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -74,7 +73,7 @@ fun MainScreen(navController: NavHostController) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = teslaRed,
+                    containerColor = TeslaPrimary,
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White,
                     actionIconContentColor = Color.White
