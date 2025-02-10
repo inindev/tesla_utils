@@ -25,19 +25,13 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import com.github.inindev.teslaapp.ui.theme.ValidationWarningColor
 import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorage, oauth2Client: OAuth2Client, viewModel: MainViewModel) {
     val context = LocalContext.current
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModelFactory(secureStorage))
-    val settings by settingsViewModel.settingsState.collectAsState()
-    val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
-    val clientSecretValidationState by settingsViewModel.clientSecretValidationState.collectAsState()
-    val scope = rememberCoroutineScope()
-    val isAuthenticating by viewModel.isAuthenticating.collectAsState()
-    val statusTextState by viewModel.statusText.collectAsState() // Collect the state
-    val statusText = statusTextState // Use the collected state
 
     // load settings when the screen is composed
     LaunchedEffect(Unit) {
@@ -45,7 +39,10 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
     }
 
     Scaffold(
-        bottomBar = { StatusBar(statusText = statusText) }
+        bottomBar = {
+            val statusText by viewModel.statusText.collectAsState()
+            StatusBar(statusText = statusText)
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -77,6 +74,11 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                 color = Color.LightGray
             )
 
+            // for Client ID and Secret TextField
+            val settings by settingsViewModel.settingsState.collectAsState()
+            val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
+            val clientSecretValidationState by settingsViewModel.clientSecretValidationState.collectAsState()
+
             // Client ID
             OutlinedTextField(
                 value = settings.clientId,
@@ -89,7 +91,7 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                 textStyle = LocalTextStyle.current.copy(
                     color = when (clientIdValidationState) {
                         SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Color(0xFF1E90FF) // DodgerBlue
+                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
                         SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface // Default
                     }
                 ),
@@ -99,7 +101,7 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                             imageVector = Icons.Default.Warning,
                             contentDescription = "Incomplete",
-                            tint = Color(0xFF1E90FF)
+                            tint = ValidationWarningColor
                         )
 
                         SettingsViewModel.ValidationState.INVALID -> Icon(
@@ -118,29 +120,12 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                     )
                 }
             )
-
             // warning / error message below the TextField
-            when (clientIdValidationState) {
-                SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> {
-                    Text(
-                        text = "Client ID is partially valid but incomplete. Please complete the UUID format.",
-                        color = Color(0xFF1E90FF),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-
-                SettingsViewModel.ValidationState.INVALID -> {
-                    Text(
-                        text = "Please enter a valid UUID format for Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-
-                else -> {} // no message for VALID or EMPTY
-            }
+            ValidationFeedback(
+                validationState = clientIdValidationState,
+                validButIncompleteMessage = "Client ID is partially valid but incomplete. Please complete the UUID format.",
+                invalidMessage = "Please enter a valid UUID format for Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            )
 
             // Client Secret
             OutlinedTextField(
@@ -154,7 +139,7 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                 textStyle = LocalTextStyle.current.copy(
                     color = when (clientSecretValidationState) {
                         SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Color(0xFF1E90FF) // DodgerBlue
+                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
                         SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface // Default
                     }
                 ),
@@ -164,7 +149,7 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                             imageVector = Icons.Default.Warning,
                             contentDescription = "Incomplete",
-                            tint = Color(0xFF1E90FF)
+                            tint = ValidationWarningColor
                         )
 
                         SettingsViewModel.ValidationState.INVALID -> Icon(
@@ -173,37 +158,22 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                             tint = MaterialTheme.colorScheme.error
                         )
 
-                        else -> {} // No icon for VALID or EMPTY
+                        else -> { } // No icon for VALID or EMPTY
                     }
                 },
                 // Placeholder text
                 placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) }
             )
-
             // Add a message below the Client Secret field for validation feedback
-            when (clientSecretValidationState) {
-                SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> {
-                    Text(
-                        text = "Client Secret is partially valid but incomplete. Please enter the full 26 characters.",
-                        color = Color(0xFF1E90FF),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-
-                SettingsViewModel.ValidationState.INVALID -> {
-                    Text(
-                        text = "Client Secret is invalid. It must start with 'ta-secret.' and be 26 characters long.",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(start = 16.dp)
-                    )
-                }
-
-                else -> {} // no message for VALID or EMPTY
-            }
+            ValidationFeedback(
+                validationState = clientSecretValidationState,
+                validButIncompleteMessage = "Client Secret is partially valid but incomplete. Please enter the full 26 characters.",
+                invalidMessage = "Client Secret is invalid. It must start with 'ta-secret.' and be 26 characters long."
+            )
 
             // Authenticate Button
+            val scope = rememberCoroutineScope()
+            val isAuthenticating by viewModel.isAuthenticating.collectAsState()
             Button(
                 onClick = {
                     viewModel.setIsAuthenticating(true)
@@ -290,5 +260,32 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                     .padding(top = 8.dp)
             )
         }
+    }
+}
+
+@Composable
+fun ValidationFeedback(
+    validationState: SettingsViewModel.ValidationState,
+    validButIncompleteMessage: String,
+    invalidMessage: String
+) {
+    when (validationState) {
+        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> {
+            Text(
+                text = validButIncompleteMessage,
+                color = ValidationWarningColor,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+        SettingsViewModel.ValidationState.INVALID -> {
+            Text(
+                text = invalidMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+        else -> { } // no message for VALID or EMPTY
     }
 }

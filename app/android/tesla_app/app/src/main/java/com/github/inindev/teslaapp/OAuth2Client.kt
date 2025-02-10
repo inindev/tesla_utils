@@ -11,6 +11,13 @@ import java.util.UUID
 import kotlin.math.max
 import kotlin.math.floor
 
+// 1. Client -> Authorization Server: Redirect user to login and approve access.
+// 2. User -> Authorization Server: Authenticate and authorize.
+// 3. Authorization Server -> Client: Redirect back with Authorization Code.
+// 4. Client -> Authorization Server: POST request with code to get tokens.
+// 5. Authorization Server -> Client: Response with Access Token (and Refresh Token).
+// 6. Client -> Resource Server: Use Access Token to access protected resources.
+
 class OAuth2Client(private val secureStorage: SecureStorage) {
     companion object {
         const val TAG = "OAuth2Client"
