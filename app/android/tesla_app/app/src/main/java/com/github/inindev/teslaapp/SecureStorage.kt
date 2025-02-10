@@ -22,29 +22,29 @@ class SecureStorage(private val context: Context) {
     )
 
     /**
-     * Stores the authentication token.
-     * @param authToken The token to store or remove if blank.
+     * Stores the authentication access token.
+     * @param accessToken The token to store or remove if blank.
      */
-    fun storeAuthToken(authToken: String?) {
+    fun storeAccessToken(accessToken: String?) {
         with(sharedPreferences.edit()) {
-            if (authToken.isNullOrBlank()) {
-                remove("auth_token")
+            if (accessToken.isNullOrBlank()) {
+                remove("access_token")
             } else {
-                putString("auth_token", authToken)
+                putString("access_token", accessToken)
             }
             apply()
         }
     }
 
     /**
-     * Retrieves the authentication token, returning an empty string if not found or on error.
+     * Retrieves the authentication access token, returning an empty string if not found or on error.
      * @return The stored token or an empty string.
      */
-    fun retrieveAuthToken(): String {
+    fun retrieveAccessToken(): String {
         return try {
-            sharedPreferences.getString("auth_token", "") ?: ""
+            sharedPreferences.getString("access_token", "") ?: ""
         } catch (e: Exception) {
-            Log.e("SecureStorage", "Error retrieving auth token", e)
+            Log.e("SecureStorage", "Error retrieving access token", e)
             ""
         }
     }
