@@ -6,6 +6,7 @@ import android.util.Log
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
 import kotlin.math.max
@@ -294,12 +295,33 @@ class OAuth2Client(private val secureStorage: SecureStorage) {
      * @param jwtToken The JWT token to decode.
      * @return A pair of (expiration time in seconds, percentage of life remaining) or null if parsing fails.
      */
-    private fun getJwtExpInfo(jwtToken: String): Pair<Long, Int>? {
-        val parts = jwtToken.split('.')
-        if (parts.size != 3) return null
+    private fun getJwtExpInfo(jwtToken: String? = null): Pair<Long, Int>? {
+        val token = jwtToken ?: secureStorage.retrieveAccessToken()
+        if (token.isBlank()) {
+                Log.d(TAG, "JWT is null or empty")
+                return null
+        }
 
-        val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
-        val json = JSONObject(payload)
+        val parts = token.split('.')
+        if (parts.size != 3) {
+            Log.d(TAG, "Invalid JWT format: expected 3 parts, but got ${parts.size}")
+            return null
+        }
+
+        val payload = try {
+            String(Base64.decode(parts[1], Base64.URL_SAFE))
+        } catch (e: IllegalArgumentException) {
+            Log.d(TAG, "Failed to decode JWT payload", e)
+            return null
+        }
+
+        val json = try {
+            JSONObject(payload)
+        } catch (e: JSONException) {
+            Log.d(TAG, "Failed to json parse JWT payload", e)
+            return null
+        }
+
         val now = System.currentTimeMillis() / 1000 // current time in seconds
         val exp = json.getLong("exp")
         val iat = json.getLong("iat")
