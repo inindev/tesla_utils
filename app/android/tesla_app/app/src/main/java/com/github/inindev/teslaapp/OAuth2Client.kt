@@ -207,7 +207,7 @@ class OAuth2Client(private val secureStorage: SecureStorage) {
      * 
      * @return An [AuthResult] indicating if the refresh was successful or not.
      */
-    private fun refreshAccessToken(): AuthResult {
+    fun refreshAccessToken(): AuthResult {
         try {
             val clientId = secureStorage.retrieveClientId()
             if (clientId.isBlank()) {
@@ -295,7 +295,7 @@ class OAuth2Client(private val secureStorage: SecureStorage) {
      * @param jwtToken The JWT token to decode.
      * @return A pair of (expiration time in seconds, percentage of life remaining) or null if parsing fails.
      */
-    private fun getJwtExpInfo(jwtToken: String? = null): Pair<Long, Int>? {
+    fun getJwtExpInfo(jwtToken: String? = null): Pair<Long, Int>? {
         val token = jwtToken ?: secureStorage.retrieveAccessToken()
         if (token.isBlank()) {
                 Log.d(TAG, "JWT is null or empty")
