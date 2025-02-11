@@ -1,0 +1,99 @@
+From 2f9f81250ba0804eb08c7d98ed0b535244ef35e0 Mon Sep 17 00:00:00 2001
+From: John Clark <inindev@gmail.com>
+Date: Tue, 11 Feb 2025 17:28:41 -0500
+Subject: [PATCH] add option to start server without tls (used where another
+ front-end server is terminating tls)
+
+Signed-off-by: John Clark <inindev@gmail.com>
+---
+ cmd/tesla-http-proxy/main.go | 50 ++++++++++++++++++++++--------------
+ 1 file changed, 31 insertions(+), 19 deletions(-)
+
+diff --git a/cmd/tesla-http-proxy/main.go b/cmd/tesla-http-proxy/main.go
+index 064b986..c3a4f8a 100644
+--- a/cmd/tesla-http-proxy/main.go
++++ b/cmd/tesla-http-proxy/main.go
+@@ -42,6 +42,7 @@ type HTTProxyConfig struct {
+ 	host         string
+ 	port         int
+ 	timeout      time.Duration
++	noTLS        bool
+ }
+ 
+ var (
+@@ -55,6 +56,7 @@ func init() {
+ 	flag.StringVar(&httpConfig.host, "host", "localhost", "Proxy server `hostname`")
+ 	flag.IntVar(&httpConfig.port, "port", defaultPort, "`Port` to listen on")
+ 	flag.DurationVar(&httpConfig.timeout, "timeout", proxy.DefaultTimeout, "Timeout interval when sending commands")
++	flag.BoolVar(&httpConfig.noTLS, "notls", false, "Run server without TLS")
+ }
+ 
+ func Usage() {
+@@ -107,17 +109,19 @@ func main() {
+ 		return
+ 	}
+ 
+-	if tlsPublicKey, err := protocol.LoadPublicKey(httpConfig.keyFilename); err == nil {
+-		if bytes.Equal(tlsPublicKey.Bytes(), skey.PublicBytes()) {
+-			fmt.Fprintln(os.Stderr, "It is unsafe to use the same private key for TLS and command authentication.")
+-			fmt.Fprintln(os.Stderr, "")
+-			fmt.Fprintln(os.Stderr, "Generate a new TLS key for this server.")
+-			return
++	if !httpConfig.noTLS { // check if tls is not disabled
++		if tlsPublicKey, err := protocol.LoadPublicKey(httpConfig.keyFilename); err == nil {
++			if bytes.Equal(tlsPublicKey.Bytes(), skey.PublicBytes()) {
++				fmt.Fprintln(os.Stderr, "It is unsafe to use the same private key for TLS and command authentication.")
++				fmt.Fprintln(os.Stderr, "")
++				fmt.Fprintln(os.Stderr, "Generate a new TLS key for this server.")
++				return
++			}
++			log.Debug("Verified that TLS key is not the same as the command-authentication key.")
++		} else {
++			// Discarding the error here is deliberate
++			log.Debug("Verified that TLS key is not a recycled command-authentication key, because it is not NIST P256.")
+ 		}
+-		log.Debug("Verified that TLS key is not the same as the command-authentication key.")
+-	} else {
+-		// Discarding the error here is deliberate
+-		log.Debug("Verified that TLS key is not a recycled command-authentication key, because it is not NIST P256.")
+ 	}
+ 
+ 	log.Debug("Creating proxy")
+@@ -128,17 +132,25 @@ func main() {
+ 	}
+ 	p.Timeout = httpConfig.timeout
+ 	addr := fmt.Sprintf("%s:%d", httpConfig.host, httpConfig.port)
+-	log.Info("Listening on %s", addr)
+-
+-	// To add more application logic requests, such as alternative client authentication, create
+-	// a http.HandleFunc implementation (https://pkg.go.dev/net/http#HandlerFunc). The ServeHTTP
+-	// method of your implementation can perform your business logic and then, if the request is
+-	// authorized, invoke p.ServeHTTP. Finally, replace p in the below ListenAndServeTLS call with
+-	// an object of your newly created type.
+-	log.Error("Server stopped: %s", http.ListenAndServeTLS(addr, httpConfig.certFilename, httpConfig.keyFilename, p))
++
++	if httpConfig.noTLS {
++		log.Info("Starting server in non-TLS mode (insecure) on %s", addr)
++	} else {
++		log.Info("Starting server in TLS mode on %s", addr)
++	}
++
++	// To add more application logic, such as alternative client authentication, create
++	// an http.Handler implementation or use http.HandleFunc (see: https://pkg.go.dev/net/http#HandlerFunc).
++	// Your handler's ServeHTTP method can include your business logic, and if authorized, invoke p.ServeHTTP.
++	// Then, replace 'p' with your custom handler in the appropriate ListenAndServe call below.
++	if httpConfig.noTLS {
++		log.Error("Server stopped: %s", http.ListenAndServe(addr, p))
++	} else {
++		log.Error("Server stopped: %s", http.ListenAndServeTLS(addr, httpConfig.certFilename, httpConfig.keyFilename, p))
++	}
+ }
+ 
+-// readConfig applies configuration from environment variables.
++// readFromEnvironment applies configuration from environment variables.
+ // Values are not overwritten.
+ func readFromEnvironment() error {
+ 	if httpConfig.certFilename == "" {
+-- 
+2.39.5
+
