@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-
 @Composable
 fun GridButtons(viewModel: MainViewModel) {
     Column(
@@ -22,7 +21,7 @@ fun GridButtons(viewModel: MainViewModel) {
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // First Row
+        // first row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -61,7 +60,7 @@ fun GridButtons(viewModel: MainViewModel) {
             }
         }
 
-        // Second Row
+        // second row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -86,7 +85,7 @@ fun GridButtons(viewModel: MainViewModel) {
                     .height(64.dp)
                     .padding(horizontal = 16.dp)
             ) {
-                Text("Charge")
+                Text("CP Close")
             }
             // flash lights
             Button(
@@ -100,7 +99,7 @@ fun GridButtons(viewModel: MainViewModel) {
             }
         }
 
-        // Third Row
+        // third row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -138,6 +137,42 @@ fun GridButtons(viewModel: MainViewModel) {
                 Text("Wake")
             }
         }
+
+        // fourth row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(
+                onClick = { viewModel.updateStatusText("Button 10 Pressed") },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Button 10")
+            }
+            Button(
+                onClick = { viewModel.updateStatusText("Button 11 Pressed") },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Button 11")
+            }
+            // vehicle
+            Button(
+                onClick = { viewModel.vehicle() },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Vehicle")
+            }
+        }
     }
 }
-

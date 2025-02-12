@@ -1,9 +1,10 @@
 package com.github.inindev.teslaapp
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Settings
@@ -19,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
 
@@ -57,19 +59,18 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
         bottomBar = { StatusBar(statusText = statusText) },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            // Place to add some vertical space before the grid
-            Spacer(modifier = Modifier.weight(0.25f)) // Roughly 25% down the screen
-
-            // 3x3 Button Grid
-            GridButtons(viewModel)
-
-            // Space below the grid
-            Spacer(modifier = Modifier.weight(1f))
+            item {
+                Spacer(modifier = Modifier.height(128.dp))
+                GridButtons(viewModel)
+            }
+            item {
+                OutputPanel(viewModel)
+            }
         }
     }
 }

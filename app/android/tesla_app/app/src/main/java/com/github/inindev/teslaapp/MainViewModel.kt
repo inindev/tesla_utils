@@ -1,5 +1,8 @@
 package com.github.inindev.teslaapp
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,31 +18,60 @@ class MainViewModel(
     val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
     private val fleetApi: TeslaFleetApi
 
-    init {
-        fleetApi = TeslaFleetApi(oauth2Client)
-
-        val vin = secureStorage.retrieveVin()
-        fleetApi.updateVehicleId(vin)
-
-        val baseUrl = secureStorage.retrieveBaseUrl()
-        fleetApi.updateBaseUrl(baseUrl)
-    }
-
-    fun setIsAuthenticating(value: Boolean) {
-        viewModelScope.launch {
-            _isAuthenticating.value = value
-        }
-    }
+    var jsonContent by mutableStateOf("")
+        private set
 
     private val _statusText = MutableStateFlow("Status: Ready")
     val statusText: StateFlow<String> = _statusText.asStateFlow()
 
-    fun updateStatusText(newStatus: String) {
-        viewModelScope.launch {
-            _statusText.value = newStatus
+    init {
+        fleetApi = TeslaFleetApi(oauth2Client)
+        configureFleetApi()
+    }
+
+    private fun configureFleetApi() {
+        val vin = secureStorage.retrieveVin()
+        val baseUrl = secureStorage.retrieveBaseUrl()
+        fleetApi.apply {
+            updateVehicleId(vin)
+            updateBaseUrl(baseUrl)
         }
     }
 
+    fun setIsAuthenticating(value: Boolean) {
+        viewModelScope.launch { _isAuthenticating.value = value }
+    }
+
+    fun updateStatusText(newStatus: String) {
+        viewModelScope.launch { _statusText.value = newStatus }
+    }
+
+    private fun prettyPrint(jsonString: String): String {
+        var indentLevel = 0
+        val result = StringBuilder()
+        for (i in jsonString.indices) {
+            when (val char = jsonString[i]) {
+                '{', '[' -> {
+                    result.append(char).append('\n')
+                    indentLevel++
+                    repeat(indentLevel) { result.append("   ") }
+                }
+                '}', ']' -> {
+                    result.append('\n')
+                    indentLevel--
+                    repeat(indentLevel) { result.append("   ") }
+                    result.append(char)
+                }
+                ',' -> {
+                    result.append(char).append('\n')
+                    repeat(indentLevel) { result.append("   ") }
+                }
+                ':' -> result.append(char).append(' ')
+                else -> result.append(char)
+            }
+        }
+        return result.toString()
+    }
 
     fun lockDoors() {
         viewModelScope.launch {
@@ -144,6 +176,23 @@ class MainViewModel(
                 when (result) {
                     is RestResult.Success -> updateStatusText("Wakeup successful")
                     is RestResult.Failure -> updateStatusText("Failed to wake: ${result.errorMessage}")
+                }
+            }
+        }
+    }
+
+    fun vehicle() {
+        viewModelScope.launch {
+            updateStatusText("Fetching vehicle...")
+            fleetApi.vehicle { result ->
+                when (result) {
+                    is RestResult.Success -> {
+                        //val body = result.data
+                        //updateJsonContent(body)
+                        jsonContent = prettyPrint(result.data)
+                        updateStatusText("Vehicle fetch successful")
+                    }
+                    is RestResult.Failure -> updateStatusText("Failed to fetch vehicle: ${result.errorMessage}")
                 }
             }
         }

@@ -8,8 +8,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 
-// https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands
-
 class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
     private var vehicleId: String = ""
     private var baseUrl: String = ""
@@ -22,6 +20,8 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         this.baseUrl = newBaseUrl
     }
 
+    // tesla rest calls
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands
     suspend fun lockDoors(callback: (RestResult) -> Unit) {
         executeRequest(
             method = "POST",
@@ -112,6 +112,24 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         )
     }
 
+    suspend fun vehicle(callback: (RestResult) -> Unit) {
+        executeRequest(
+            method = "GET",
+            url = "$baseUrl/api/1/vehicles/$vehicleId",
+            callback = callback
+        )
+    }
+
+    suspend fun vehicleData(callback: (RestResult) -> Unit) {
+        executeRequest(
+            method = "GET",
+            url = "$baseUrl/api/1/vehicles/$vehicleId/vehicle_data",
+            callback = callback
+        )
+    }
+
+    // execute the network request using okhttp in a coroutine context
+    // currently supports get and post methods using the callback below
     private suspend fun executeRequest(
         method: String,
         url: String,
@@ -131,7 +149,7 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         // merge headers: allow provided headers to override defaults
         val fullHeaders = defaultHeaders.toMutableMap().apply {
             headers.forEach { (key, value) ->
-                this[key] = value // This will overwrite if the key exists, or add if new
+                this[key] = value
             }
         }
 
