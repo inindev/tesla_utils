@@ -1,8 +1,5 @@
 package com.github.inindev.teslaapp
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,27 +11,23 @@ class MainViewModel(
     private val secureStorage: SecureStorage,
     private val oauth2Client: OAuth2Client
 ) : ViewModel() {
+    private val fleetApi: TeslaFleetApi = TeslaFleetApi(oauth2Client)
+
     private val _isAuthenticating = MutableStateFlow(false)
     val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
-    private val fleetApi: TeslaFleetApi
-
-    var jsonContent by mutableStateOf("")
-        private set
 
     private val _statusText = MutableStateFlow("Status: Ready")
     val statusText: StateFlow<String> = _statusText.asStateFlow()
 
-    init {
-        fleetApi = TeslaFleetApi(oauth2Client)
-        configureFleetApi()
-    }
+    private val _jsonContent = MutableStateFlow("")
+    val jsonContent: StateFlow<String> = _jsonContent.asStateFlow()
 
-    private fun configureFleetApi() {
+    init {
         val vin = secureStorage.retrieveVin()
         val baseUrl = secureStorage.retrieveBaseUrl()
         fleetApi.apply {
-            updateVehicleId(vin)
-            updateBaseUrl(baseUrl)
+            this.vehicleId = vin
+            this.baseUrl = baseUrl
         }
     }
 
@@ -44,6 +37,121 @@ class MainViewModel(
 
     fun updateStatusText(newStatus: String) {
         viewModelScope.launch { _statusText.value = newStatus }
+    }
+
+    fun lockDoors() {
+        updateStatusText("Locking doors...")
+        execApiCmd(
+            operation = { fleetApi.lockDoors() },
+            onSuccess = { updateStatusText("Doors locked successfully") },
+            onFailure = { updateStatusText("Failed to lock doors: $it") }
+        )
+    }
+
+    fun unlockDoors() {
+        updateStatusText("Unlocking doors...")
+        execApiCmd(
+            operation = { fleetApi.unlockDoors() },
+            onSuccess = { updateStatusText("Doors unlocked successfully") },
+            onFailure = { updateStatusText("Failed to unlock doors: $it") }
+        )
+    }
+
+    fun flashLights() {
+        updateStatusText("Flashing lights...")
+        execApiCmd(
+            operation = { fleetApi.flashLights() },
+            onSuccess = { updateStatusText("Lights flashed successfully") },
+            onFailure = { updateStatusText("Failed to flash lights: $it") }
+        )
+    }
+
+    fun honkHorn() {
+        updateStatusText("Honking horn...")
+        execApiCmd(
+            operation = { fleetApi.honkHorn() },
+            onSuccess = { updateStatusText("Horn honked successfully") },
+            onFailure = { updateStatusText("Failed to honk horn: $it") }
+        )
+    }
+
+    fun rearTrunk() {
+        updateStatusText("Opening rear trunk...")
+        execApiCmd(
+            operation = { fleetApi.rearTrunk() },
+            onSuccess = { updateStatusText("Rear trunk opened successfully") },
+            onFailure = { updateStatusText("Failed to open rear trunk: $it") }
+        )
+    }
+
+    fun frontTrunk() {
+        updateStatusText("Opening front trunk...")
+        execApiCmd(
+            operation = { fleetApi.frontTrunk() },
+            onSuccess = { updateStatusText("Front trunk opened successfully") },
+            onFailure = { updateStatusText("Failed to open front trunk: $it") }
+        )
+    }
+
+    fun climateOn() {
+        updateStatusText("Turning climate on...")
+        execApiCmd(
+            operation = { fleetApi.climateOn() },
+            onSuccess = { updateStatusText("Climate activated successfully") },
+            onFailure = { updateStatusText("Failed to activate climate: $it") }
+        )
+    }
+
+    fun chargeClose() {
+        updateStatusText("Closing charger door...")
+        execApiCmd(
+            operation = { fleetApi.chargeClose() },
+            onSuccess = { updateStatusText("Charger door closed successfully") },
+            onFailure = { updateStatusText("Failed to close charger door: $it") }
+        )
+    }
+
+    fun wake() {
+        updateStatusText("Sending wake...")
+        execApiCmd(
+            operation = { fleetApi.wake() },
+            onSuccess = { updateStatusText("Wakeup successful") },
+            onFailure = { updateStatusText("Failed to wake: $it") }
+        )
+    }
+
+    fun vehicle() {
+        updateStatusText("Fetching vehicle...")
+        execApiCmd(
+            operation = { fleetApi.vehicle() },
+            onSuccess = { data ->
+                _jsonContent.value = prettyPrint(data)
+                updateStatusText("Vehicle fetch successful")
+            },
+            onFailure = { updateStatusText("Failed to fetch vehicle: $it") }
+        )
+    }
+
+    private fun execApiCmd(
+        operation: suspend () -> RestResult,
+        onSuccess: (String) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                when (val result = operation()) {
+                    is RestResult.Success -> {
+                        onSuccess(result.data)
+                    }
+                    is RestResult.Failure -> {
+                        val errorText = "HTTP ${result.errorCode ?: "Unknown Error"}"
+                        onFailure(errorText)
+                    }
+                }
+            } catch (e: Exception) {
+                onFailure("Unexpected error: ${e.message ?: "Error occurred"}")
+            }
+        }
     }
 
     private fun prettyPrint(jsonString: String): String {
@@ -72,130 +180,4 @@ class MainViewModel(
         }
         return result.toString()
     }
-
-    fun lockDoors() {
-        viewModelScope.launch {
-            updateStatusText("Locking doors...")
-            fleetApi.lockDoors { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Doors locked successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to lock doors: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun unlockDoors() {
-        viewModelScope.launch {
-            updateStatusText("Unlocking doors...")
-            fleetApi.unlockDoors { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Doors unlocked successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to unlock doors: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun flashLights() {
-        viewModelScope.launch {
-            updateStatusText("Flashing lights...")
-            fleetApi.flashLights { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Lights flashed successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to flash lights: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun honkHorn() {
-        viewModelScope.launch {
-            updateStatusText("Honking horn...")
-            fleetApi.honkHorn { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Horn honked successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to honk horn: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun rearTrunk() {
-        viewModelScope.launch {
-            updateStatusText("Opening rear trunk...")
-            fleetApi.rearTrunk { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Rear trunk opened successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to open rear trunk: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun frontTrunk() {
-        viewModelScope.launch {
-            updateStatusText("Opening front trunk...")
-            fleetApi.frontTrunk { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Front trunk opened successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to open front trunk: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun climateOn() {
-        viewModelScope.launch {
-            updateStatusText("Turning climate on...")
-            fleetApi.climateOn { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Climate activated successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to activate climate: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun chargeClose() {
-        viewModelScope.launch {
-            updateStatusText("Closing charger door...")
-            fleetApi.chargeClose { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Charger door closed successfully")
-                    is RestResult.Failure -> updateStatusText("Failed to close charger door: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun wake() {
-        viewModelScope.launch {
-            updateStatusText("Sending wake...")
-            fleetApi.wake { result ->
-                when (result) {
-                    is RestResult.Success -> updateStatusText("Wakeup successful")
-                    is RestResult.Failure -> updateStatusText("Failed to wake: ${result.errorMessage}")
-                }
-            }
-        }
-    }
-
-    fun vehicle() {
-        viewModelScope.launch {
-            updateStatusText("Fetching vehicle...")
-            fleetApi.vehicle { result ->
-                when (result) {
-                    is RestResult.Success -> {
-                        //val body = result.data
-                        //updateJsonContent(body)
-                        jsonContent = prettyPrint(result.data)
-                        updateStatusText("Vehicle fetch successful")
-                    }
-                    is RestResult.Failure -> updateStatusText("Failed to fetch vehicle: ${result.errorMessage}")
-                }
-            }
-        }
-    }
 }
-

@@ -3,141 +3,110 @@ package com.github.inindev.teslaapp
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.Request
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
+// tesla rest calls
+// https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands
+// https://developer.tesla.com/docs/fleet-api/getting-started/best-practices
+
 class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
-    private var vehicleId: String = ""
-    private var baseUrl: String = ""
+    internal var vehicleId: String = ""
+        set
 
-    fun updateVehicleId(newVehicleId: String) {
-        this.vehicleId = newVehicleId
-    }
+    internal var baseUrl: String = ""
+        set
 
-    fun updateBaseUrl(newBaseUrl: String) {
-        this.baseUrl = newBaseUrl
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-lock
+    suspend fun lockDoors(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_lock"
+    )
 
-    // tesla rest calls
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands
-    suspend fun lockDoors(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_lock",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-unlock
+    suspend fun unlockDoors(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_unlock"
+    )
 
-    suspend fun unlockDoors(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_unlock",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#flash-lights
+    suspend fun flashLights(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/flash_lights"
+    )
 
-    suspend fun flashLights(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/flash_lights",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#honk-horn
+    suspend fun honkHorn(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/honk_horn"
+    )
 
-    suspend fun honkHorn(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/honk_horn",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
+    suspend fun rearTrunk(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
+        body = "{\"which_trunk\": \"rear\"}"
+    )
 
-    suspend fun rearTrunk(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
-            body = "{\"which_trunk\": \"rear\"}",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
+    suspend fun frontTrunk(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
+        body = "{\"which_trunk\": \"front\"}"
+    )
 
-    suspend fun frontTrunk(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
-            body = "{\"which_trunk\": \"front\"}",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-stop
+    suspend fun climateOff(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_stop"
+    )
 
-    suspend fun climateOff(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_stop",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-start
+    suspend fun climateOn(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_start"
+    )
 
-    suspend fun climateOn(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_start",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-close
+    suspend fun chargeClose(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_close"
+    )
 
-    suspend fun chargeClose(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_close",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-open
+    suspend fun chargeOpen(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_open"
+    )
 
-    suspend fun chargeOpen(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_open",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#wake-up
+    suspend fun wake(): RestResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/wake_up"
+    )
 
-    suspend fun wake(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "POST",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/wake_up",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#vehicle
+    suspend fun vehicle(): RestResult = executeRequest(
+        method = "GET",
+        url = "$baseUrl/api/1/vehicles/$vehicleId"
+    )
 
-    suspend fun vehicle(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "GET",
-            url = "$baseUrl/api/1/vehicles/$vehicleId",
-            callback = callback
-        )
-    }
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#vehicle-data
+    suspend fun vehicleData(): RestResult = executeRequest(
+        method = "GET",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/vehicle_data"
+    )
 
-    suspend fun vehicleData(callback: (RestResult) -> Unit) {
-        executeRequest(
-            method = "GET",
-            url = "$baseUrl/api/1/vehicles/$vehicleId/vehicle_data",
-            callback = callback
-        )
-    }
-
-    // execute the network request using okhttp in a coroutine context
-    // currently supports get and post methods using the callback below
+    // process the request
+    private val client = OkHttpClient()
     private suspend fun executeRequest(
         method: String,
         url: String,
         headers: Map<String, String> = emptyMap(),
-        body: String? = null,
-        callback: (RestResult) -> Unit
-    ) = withContext(Dispatchers.IO) {
-        val client = OkHttpClient()
+        body: String? = null
+    ): RestResult = withContext(Dispatchers.IO) {
         val tag = "TeslaFleetApi"
 
         // default headers
@@ -157,40 +126,33 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         Log.d(tag, "Headers: $fullHeaders")
         if (body != null) Log.d(tag, "Body: $body")
 
-        try {
-            val request = Request.Builder()
-                .url(url)
-                .apply {
-                    fullHeaders.forEach { (k, v) -> addHeader(k, v) }
-                    when (method) {
-                        "POST" -> post(
-                            (body ?: "").toRequestBody("application/json".toMediaType())
-                        )
-                        "GET" -> get()
-                    }
+        val request = Request.Builder()
+            .url(url)
+            .apply {
+                fullHeaders.forEach { (k, v) -> addHeader(k, v) }
+                when (method.uppercase()) {
+                    "GET" -> get()
+                    "POST" -> post(
+                        (body ?: "").toRequestBody("application/json".toMediaType())
+                    )
+                    else -> throw IllegalArgumentException("Unsupported method: $method")
                 }
-                .build()
-
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: ""
-            Log.d(tag, "Response received with code: ${response.code}")
-            Log.d(tag, "Response body: $responseBody")
-
-            if (response.isSuccessful) {
-                Log.d(tag, "Request was successful. Data: $responseBody")
-                callback(RestResult.Success(responseBody))
-            } else {
-                Log.e(tag, "Request failed with HTTP code: ${response.code}")
-                callback(RestResult.Failure("Unexpected code ${response.code}"))
             }
-        } catch (e: Exception) {
-            Log.e(tag, "Request failed with exception: ${e.message}", e)
-            callback(RestResult.Failure(e.message ?: "An unknown error occurred"))
+            .build()
+
+        val response = client.newCall(request).execute()
+        val responseBody = response.body?.string() ?: ""
+        if (response.isSuccessful) {
+            Log.d(tag, "http success code: ${response.code} body: $responseBody")
+            RestResult.Success(responseBody)
+        } else {
+            Log.d(tag, "http failure code: ${response.code}")
+            RestResult.Failure(response.code)
         }
     }
 }
 
 sealed class RestResult {
     data class Success(val data: String) : RestResult()
-    data class Failure(val errorMessage: String) : RestResult()
+    data class Failure(val errorCode: Int?) : RestResult()
 }
