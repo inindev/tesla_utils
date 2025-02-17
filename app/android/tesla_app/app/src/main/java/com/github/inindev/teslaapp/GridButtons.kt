@@ -11,21 +11,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun GridButtons(viewModel: MainViewModel) {
+fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, verticalSpacing: Dp = 8.dp) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = horizontalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // first row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = verticalSpacing),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // lock doors
@@ -34,7 +35,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Lock")
             }
@@ -45,7 +46,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Climate")
             }
@@ -56,7 +57,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("CP Close")
             }
@@ -66,7 +67,7 @@ fun GridButtons(viewModel: MainViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = verticalSpacing),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // unlock doors
@@ -75,7 +76,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Unlock")
             }
@@ -86,7 +87,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Windows")
             }
@@ -97,7 +98,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Wake Up")
             }
@@ -107,7 +108,7 @@ fun GridButtons(viewModel: MainViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = verticalSpacing),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // actuate trunk
@@ -116,7 +117,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Trunk")
             }
@@ -127,7 +128,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Honk")
             }
@@ -138,7 +139,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Info")
             }
@@ -148,7 +149,7 @@ fun GridButtons(viewModel: MainViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = verticalSpacing),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // open frunk
@@ -157,7 +158,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Frunk")
             }
@@ -168,7 +169,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("Flash")
             }
@@ -179,7 +180,7 @@ fun GridButtons(viewModel: MainViewModel) {
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = horizontalSpacing)
             ) {
                 Text("InfoEx")
             }
