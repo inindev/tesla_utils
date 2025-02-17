@@ -38,35 +38,7 @@ fun GridButtons(viewModel: MainViewModel) {
             ) {
                 Text("Lock")
             }
-            // unlock doors
-            Button(
-                onClick = { viewModel.unlockDoors() },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Unlock")
-            }
-            // honk horn
-            Button(
-                onClick = { viewModel.honkHorn() },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Honk")
-            }
-        }
 
-        // second row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
             // climate on
             Button(
                 onClick = { viewModel.climateOn() },
@@ -77,6 +49,7 @@ fun GridButtons(viewModel: MainViewModel) {
             ) {
                 Text("Climate")
             }
+
             // charger door close
             Button(
                 onClick = { viewModel.chargeClose() },
@@ -87,19 +60,91 @@ fun GridButtons(viewModel: MainViewModel) {
             ) {
                 Text("CP Close")
             }
-            // flash lights
+        }
+
+        // second row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // unlock doors
             Button(
-                onClick = { viewModel.flashLights() },
+                onClick = { viewModel.unlockDoors() },
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
                     .padding(horizontal = 16.dp)
             ) {
-                Text("Flash")
+                Text("Unlock")
+            }
+
+            // vent windows
+            Button(
+                onClick = { viewModel.ventWindows() },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Windows")
+            }
+
+            // wake up
+            Button(
+                onClick = { viewModel.wakeUp() },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Wake Up")
             }
         }
 
         // third row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            // actuate trunk
+            Button(
+                onClick = { viewModel.rearTrunk() },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Trunk")
+            }
+
+            // honk horn
+            Button(
+                onClick = { viewModel.honkHorn() },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Honk")
+            }
+
+            // vehicle
+            Button(
+                onClick = { viewModel.vehicle() },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text("Info")
+            }
+        }
+
+        // fourth row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -116,62 +161,27 @@ fun GridButtons(viewModel: MainViewModel) {
             ) {
                 Text("Frunk")
             }
-            // actuate trunk
-            Button(
-                onClick = { viewModel.rearTrunk() },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Trunk")
-            }
-            // wake
-            Button(
-                onClick = { viewModel.wakeUp() },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Wake Up")
-            }
-        }
 
-        // fourth row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
+            // flash lights
             Button(
-                onClick = { viewModel.updateStatusText("Button 10 Pressed") },
+                onClick = { viewModel.flashLights() },
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
                     .padding(horizontal = 16.dp)
             ) {
-                Text("Button 10")
+                Text("Flash")
             }
-            Button(
-                onClick = { viewModel.updateStatusText("Button 11 Pressed") },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp)
-            ) {
-                Text("Button 11")
-            }
+
             // vehicle
             Button(
-                onClick = { viewModel.vehicle() },
+                onClick = { viewModel.vehicleData() },
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
                     .padding(horizontal = 16.dp)
             ) {
-                Text("Vehicle")
+                Text("InfoEx")
             }
         }
     }

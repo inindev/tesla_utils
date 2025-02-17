@@ -39,6 +39,60 @@ class MainViewModel(
         viewModelScope.launch { _statusText.value = newStatus }
     }
 
+    fun frontTrunk() {
+        updateStatusText("Opening front trunk...")
+        execApiCmd(
+            operation = { fleetApi.frontTrunk() },
+            onSuccess = { updateStatusText("Front trunk opened successfully") },
+            onFailure = { updateStatusText("Failed to open front trunk: $it") }
+        )
+    }
+
+    fun rearTrunk() {
+        updateStatusText("Opening rear trunk...")
+        execApiCmd(
+            operation = { fleetApi.rearTrunk() },
+            onSuccess = { updateStatusText("Rear trunk opened successfully") },
+            onFailure = { updateStatusText("Failed to open rear trunk: $it") }
+        )
+    }
+
+    fun climateOn() {
+        updateStatusText("Turning climate on...")
+        execApiCmd(
+            operation = { fleetApi.climateOn() },
+            onSuccess = { updateStatusText("Climate turned on successfully") },
+            onFailure = { updateStatusText("Failed to turn on climate: $it") }
+        )
+    }
+
+    fun climateOff() {
+        updateStatusText("Turning climate off...")
+        execApiCmd(
+            operation = { fleetApi.climateOff() },
+            onSuccess = { updateStatusText("Climate turned off successfully") },
+            onFailure = { updateStatusText("Failed to turn off climate: $it") }
+        )
+    }
+
+    fun chargeClose() {
+        updateStatusText("Closing charger door...")
+        execApiCmd(
+            operation = { fleetApi.chargeClose() },
+            onSuccess = { updateStatusText("Charger door closed successfully") },
+            onFailure = { updateStatusText("Failed to close charger door: $it") }
+        )
+    }
+
+    fun chargeOpen() {
+        updateStatusText("Opening charger door...")
+        execApiCmd(
+            operation = { fleetApi.chargeOpen() },
+            onSuccess = { updateStatusText("Charger door opened successfully") },
+            onFailure = { updateStatusText("Failed to open charger door: $it") }
+        )
+    }
+
     fun lockDoors() {
         updateStatusText("Locking doors...")
         execApiCmd(
@@ -75,39 +129,12 @@ class MainViewModel(
         )
     }
 
-    fun rearTrunk() {
-        updateStatusText("Opening rear trunk...")
+    fun ventWindows() {
+        updateStatusText("Venting windows...")
         execApiCmd(
-            operation = { fleetApi.rearTrunk() },
-            onSuccess = { updateStatusText("Rear trunk opened successfully") },
-            onFailure = { updateStatusText("Failed to open rear trunk: $it") }
-        )
-    }
-
-    fun frontTrunk() {
-        updateStatusText("Opening front trunk...")
-        execApiCmd(
-            operation = { fleetApi.frontTrunk() },
-            onSuccess = { updateStatusText("Front trunk opened successfully") },
-            onFailure = { updateStatusText("Failed to open front trunk: $it") }
-        )
-    }
-
-    fun climateOn() {
-        updateStatusText("Turning climate on...")
-        execApiCmd(
-            operation = { fleetApi.climateOn() },
-            onSuccess = { updateStatusText("Climate activated successfully") },
-            onFailure = { updateStatusText("Failed to activate climate: $it") }
-        )
-    }
-
-    fun chargeClose() {
-        updateStatusText("Closing charger door...")
-        execApiCmd(
-            operation = { fleetApi.chargeClose() },
-            onSuccess = { updateStatusText("Charger door closed successfully") },
-            onFailure = { updateStatusText("Failed to close charger door: $it") }
+            operation = { fleetApi.ventWindows() },
+            onSuccess = { updateStatusText("Windows vented successfully") },
+            onFailure = { updateStatusText("Failed to vent windows: $it") }
         )
     }
 
@@ -123,15 +150,28 @@ class MainViewModel(
 
     fun vehicle() {
         _jsonContent.value = ""
-        updateStatusText("Fetching vehicle...")
+        updateStatusText("Fetching vehicle info...")
         execApiCmd(
             operation = { fleetApi.vehicle() },
             onSuccess = { data ->
                 _jsonContent.value = prettyPrint(data)
-                updateStatusText("Vehicle fetch successful")
+                updateStatusText("Vehicle info fetch successful")
             },
-            onFailure = { updateStatusText("Failed to fetch vehicle: $it") },
+            onFailure = { updateStatusText("Failed to fetch vehicle info: $it") },
             false
+        )
+    }
+
+    fun vehicleData() {
+        _jsonContent.value = ""
+        updateStatusText("Fetching vehicle infoEx...")
+        execApiCmd(
+            operation = { fleetApi.vehicleData() },
+            onSuccess = { data ->
+                _jsonContent.value = prettyPrint(data)
+                updateStatusText("Vehicle infoEx fetch successful")
+            },
+            onFailure = { updateStatusText("Failed to fetch vehicle infoEx: $it") }
         )
     }
 

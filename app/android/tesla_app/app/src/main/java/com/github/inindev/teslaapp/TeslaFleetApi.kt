@@ -23,6 +23,44 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
     internal var baseUrl: String = ""
         set
 
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
+    suspend fun frontTrunk(): HttpResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
+        body = "{\"which_trunk\": \"front\"}"
+    )
+
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
+    suspend fun rearTrunk(): HttpResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
+        body = "{\"which_trunk\": \"rear\"}"
+    )
+
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-start
+    suspend fun climateOn(): HttpResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_start"
+    )
+
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-stop
+    suspend fun climateOff(): HttpResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_stop"
+    )
+
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-close
+    suspend fun chargeClose(): HttpResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_close"
+    )
+
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-open
+    suspend fun chargeOpen(): HttpResult = executeRequest(
+        method = "POST",
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_open"
+    )
+
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-lock
     suspend fun lockDoors(): HttpResult = executeRequest(
         method = "POST",
@@ -47,42 +85,11 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/honk_horn"
     )
 
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
-    suspend fun rearTrunk(): HttpResult = executeRequest(
+    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#window-control
+    suspend fun ventWindows(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
-        body = "{\"which_trunk\": \"rear\"}"
-    )
-
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
-    suspend fun frontTrunk(): HttpResult = executeRequest(
-        method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
-        body = "{\"which_trunk\": \"front\"}"
-    )
-
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-stop
-    suspend fun climateOff(): HttpResult = executeRequest(
-        method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_stop"
-    )
-
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-start
-    suspend fun climateOn(): HttpResult = executeRequest(
-        method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_start"
-    )
-
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-close
-    suspend fun chargeClose(): HttpResult = executeRequest(
-        method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_close"
-    )
-
-    // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-open
-    suspend fun chargeOpen(): HttpResult = executeRequest(
-        method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_open"
+        url = "$baseUrl/api/1/vehicles/$vehicleId/command/window_control",
+        body = "{\"command\": \"vent\"}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#wake-up
