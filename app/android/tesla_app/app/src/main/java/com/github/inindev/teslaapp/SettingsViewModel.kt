@@ -1,5 +1,6 @@
 package com.github.inindev.teslaapp
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,11 +13,17 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
     val settingsState: StateFlow<Settings> = _settingsState.asStateFlow()
 
     data class Settings(
-        val clientId: String = "",
-        val clientSecret: String = "",
         val vin: String = "",
-        val baseUrl: String = ""
+        val baseUrl: String = "",
+        val clientId: String = "",
+        val clientSecret: String = ""
     )
+
+    private val _vinValidationState = MutableStateFlow(ValidationState.EMPTY)
+    val vinValidationState: StateFlow<ValidationState> = _vinValidationState
+
+    private val _baseUrlValidationState = MutableStateFlow(ValidationState.EMPTY)
+    val baseUrlValidationState: StateFlow<ValidationState> = _baseUrlValidationState
 
     private val _clientIdValidationState = MutableStateFlow(ValidationState.EMPTY)
     val clientIdValidationState: StateFlow<ValidationState> = _clientIdValidationState.asStateFlow()
@@ -32,10 +39,10 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
     internal fun loadSettings() {
         viewModelScope.launch {
             val loadedSettings = Settings(
-                clientId = secureStorage.retrieveClientId(),
-                clientSecret = secureStorage.retrieveClientSecret(),
                 vin = secureStorage.retrieveVin(),
-                baseUrl = secureStorage.retrieveBaseUrl()
+                baseUrl = secureStorage.retrieveBaseUrl(),
+                clientId = secureStorage.retrieveClientId(),
+                clientSecret = secureStorage.retrieveClientSecret()
             )
             _settingsState.value = loadedSettings
             _clientIdValidationState.value = isValidUuid(loadedSettings.clientId)
@@ -44,10 +51,10 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
     }
 
     private fun saveSettings(settings: Settings) {
-        secureStorage.storeClientId(settings.clientId)
-        secureStorage.storeClientSecret(settings.clientSecret)
         secureStorage.storeVin(settings.vin)
         secureStorage.storeBaseUrl(settings.baseUrl)
+        secureStorage.storeClientId(settings.clientId)
+        secureStorage.storeClientSecret(settings.clientSecret)
         _clientIdValidationState.value = isValidUuid(settings.clientId)
         _clientSecretValidationState.value = isValidClientSecret(settings.clientSecret)
     }
@@ -61,6 +68,16 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
     }
 
     // update methods
+    fun updateVin(newVin: String) {
+        updateSetting { it.copy(vin = newVin) }
+        _vinValidationState.value = isValidVin(newVin)
+    }
+
+    fun updateBaseUrl(newBaseUrl: String) {
+        updateSetting { it.copy(baseUrl = newBaseUrl) }
+        _baseUrlValidationState.value = isValidBaseUrl(newBaseUrl)
+    }
+
     fun updateClientId(newClientId: String) {
         updateSetting { it.copy(clientId = newClientId) }
         _clientIdValidationState.value = isValidUuid(newClientId)
@@ -71,19 +88,72 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
         _clientSecretValidationState.value = isValidClientSecret(newClientSecret)
     }
 
-    fun updateVin(newVin: String) {
-        updateSetting { it.copy(vin = newVin) }
-    }
-
-    fun updateBaseUrl(newBaseUrl: String) {
-        updateSetting { it.copy(baseUrl = newBaseUrl) }
-    }
-
     enum class ValidationState {
         EMPTY,
         INVALID,
         VALID_BUT_INCOMPLETE,
         VALID
+    }
+
+    private fun isValidVin(vin: String): ValidationState {
+        Log.d("VINValidation", "VIN being validated: $vin")
+
+        if (vin.isEmpty()) {
+            Log.d("VINValidation", "VIN is empty")
+            return ValidationState.EMPTY
+        }
+        if (vin.length < 17) {
+            Log.d("VINValidation", "VIN length less than 17: ${vin.length}")
+            return ValidationState.VALID_BUT_INCOMPLETE
+        }
+
+        val validChars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789"
+        if (!vin.all { it in validChars }) {
+            Log.d("VINValidation", "VIN contains invalid characters")
+            return ValidationState.INVALID
+        }
+
+        // convert character to its numeric value for check digit calculation
+        fun transliterate(c: Char): Int {
+            val lookup = "0123456789.ABCDEFGH..JKLMN.P.R..STUVWXYZ"
+            val value = lookup.indexOf(c) % 10
+            Log.d("VINValidation", "Character $c transliterated to value: $value")
+            return value
+        }
+
+        // calculate the check digit
+        val weights = "8765432X098765432" // 'X' represents 10
+        val map = "0123456789X"
+        var sum = 0
+        for (i in 0 until 17) {
+            val value = transliterate(vin[i])
+            val weight = if (weights[i] == 'X') 10 else weights[i] - '0'
+            Log.d("VINValidation", "Index $i: Value = $value, Weight = $weight")
+            sum += value * weight
+        }
+        Log.d("VINValidation", "Sum calculated for check digit: $sum")
+
+        // the check digit (9th character) is calculated
+        val calculatedCheckDigit = map[sum % 11].also {
+            Log.d("VINValidation", "Check digit calculated as $it")
+        }
+
+        // compare calculated check digit with the one in the VIN
+        val result = if (calculatedCheckDigit == vin[8]) {
+            Log.d("VINValidation", "VIN is VALID")
+            ValidationState.VALID
+        } else {
+            Log.d("VINValidation", "VIN is INVALID. Calculated check digit: $calculatedCheckDigit, Actual: ${vin[8]}")
+            ValidationState.INVALID
+        }
+        return result
+    }
+
+    private fun isValidBaseUrl(url: String): ValidationState {
+        if (url.isEmpty()) return ValidationState.EMPTY
+        if (!url.startsWith("https://")) return ValidationState.INVALID
+        val hostRegex = Regex("^https://([a-zA-Z0-9.-]+)(/.*)?$")
+        return if (hostRegex.matches(url)) ValidationState.VALID else ValidationState.INVALID
     }
 
     private fun isValidUuid(uuid: String): ValidationState {

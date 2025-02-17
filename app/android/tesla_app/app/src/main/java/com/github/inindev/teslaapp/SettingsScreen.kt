@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Warning
@@ -27,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import com.github.inindev.teslaapp.ui.theme.ValidationWarningColor
@@ -86,23 +88,93 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
             )
 
             // VIN
+            val vinValidationState by settingsViewModel.vinValidationState.collectAsState()
             OutlinedTextField(
                 value = settings.vin,
-                onValueChange = { settingsViewModel.updateVin(it) },
+                onValueChange = { settingsViewModel.updateVin(it.uppercase()) },
                 label = { Text("VIN") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(top = 16.dp),
+                textStyle = LocalTextStyle.current.copy(
+                    color = when (vinValidationState) {
+                        SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error
+                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                        SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface
+                    }
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                trailingIcon = {
+                    when (vinValidationState) {
+                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Incomplete",
+                            tint = ValidationWarningColor
+                        )
+                        SettingsViewModel.ValidationState.INVALID -> Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Error",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        else -> { } // No icon for VALID or EMPTY
+                    }
+                },
+                placeholder = {
+                    Text(
+                        "XXXXXXXXXXXXXXXXX",
+                        color = Color.LightGray
+                    )
+                }
+            )
+            ValidationFeedback(
+                validationState = vinValidationState,
+                validButIncompleteMessage = "VIN is partially valid but too short. Please enter all 17 characters.",
+                invalidMessage = "Not a valid VIN: Please enter a 17-character VIN with valid characters."
             )
 
             // Base URL
+            val baseUrlValidationState by settingsViewModel.baseUrlValidationState.collectAsState()
             OutlinedTextField(
                 value = settings.baseUrl,
                 onValueChange = { settingsViewModel.updateBaseUrl(it) },
                 label = { Text("Base URL") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = 8.dp),
+                textStyle = LocalTextStyle.current.copy(
+                    color = when (baseUrlValidationState) {
+                        SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error
+                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                        SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface
+                    }
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                trailingIcon = {
+                    when (baseUrlValidationState) {
+                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Incomplete",
+                            tint = ValidationWarningColor
+                        )
+                        SettingsViewModel.ValidationState.INVALID -> Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Error",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        else -> { } // No icon for VALID or EMPTY
+                    }
+                },
+                placeholder = {
+                    Text(
+                        "https://hostname",
+                        color = Color.LightGray
+                    )
+                }
+            )
+            ValidationFeedback(
+                validationState = baseUrlValidationState,
+                validButIncompleteMessage = "Base URL is partially valid but lacks full HTTPS specification. Please include scheme and host.",
+                invalidMessage = "Base URL is invalid. Must start with 'https://' and include a valid host."
             )
 
             // horizontal separator
@@ -131,7 +203,7 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface // Default
                     }
                 ),
-                // add a trailing icon to show validation state
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                 trailingIcon = {
                     when (clientIdValidationState) {
                         SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
@@ -180,7 +252,7 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface // Default
                     }
                 ),
-                // add a trailing icon to show validation state
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                 trailingIcon = {
                     when (clientSecretValidationState) {
                         SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
