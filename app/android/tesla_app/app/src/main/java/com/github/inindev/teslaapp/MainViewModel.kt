@@ -111,16 +111,18 @@ class MainViewModel(
         )
     }
 
-    fun wake() {
-        updateStatusText("Sending wake...")
+    fun wakeUp() {
+        updateStatusText("Sending wake up...")
         execApiCmd(
-            operation = { fleetApi.wake() },
-            onSuccess = { updateStatusText("Wakeup successful") },
-            onFailure = { updateStatusText("Failed to wake: $it") }
+            operation = { fleetApi.wakeUp() },
+            onSuccess = { updateStatusText("Wake up successful") },
+            onFailure = { updateStatusText("Failed to wake up: $it") },
+            false
         )
     }
 
     fun vehicle() {
+        _jsonContent.value = ""
         updateStatusText("Fetching vehicle...")
         execApiCmd(
             operation = { fleetApi.vehicle() },
@@ -128,24 +130,33 @@ class MainViewModel(
                 _jsonContent.value = prettyPrint(data)
                 updateStatusText("Vehicle fetch successful")
             },
-            onFailure = { updateStatusText("Failed to fetch vehicle: $it") }
+            onFailure = { updateStatusText("Failed to fetch vehicle: $it") },
+            false
         )
     }
 
     private fun execApiCmd(
-        operation: suspend () -> RestResult,
+        operation: suspend () -> HttpResult,
         onSuccess: (String) -> Unit,
-        onFailure: (String) -> Unit
+        onFailure: (String) -> Unit,
+        requiresOnlineVehicle: Boolean = true
     ) {
         viewModelScope.launch {
             try {
+                if (requiresOnlineVehicle) {
+                    val onlineStatus = fleetApi.waitForVehicleOnline()
+                    if (onlineStatus is HttpResult.Failure) {
+                        onFailure("Failed to ensure vehicle is online: HTTP ${onlineStatus.statusCode}")
+                        return@launch
+                    }
+                }
+
                 when (val result = operation()) {
-                    is RestResult.Success -> {
+                    is HttpResult.Success -> {
                         onSuccess(result.data)
                     }
-                    is RestResult.Failure -> {
-                        val errorText = "HTTP ${result.errorCode ?: "Unknown Error"}"
-                        onFailure(errorText)
+                    is HttpResult.Failure -> {
+                        onFailure("HTTP ${result.statusCode}")
                     }
                 }
             } catch (e: Exception) {

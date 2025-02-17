@@ -128,13 +128,13 @@ fun GridButtons(viewModel: MainViewModel) {
             }
             // wake
             Button(
-                onClick = { viewModel.wake() },
+                onClick = { viewModel.wakeUp() },
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
                     .padding(horizontal = 16.dp)
             ) {
-                Text("Wake")
+                Text("Wake Up")
             }
         }
 

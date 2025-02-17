@@ -2,17 +2,21 @@ package com.github.inindev.teslaapp
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 // tesla rest calls
 // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands
 // https://developer.tesla.com/docs/fleet-api/getting-started/best-practices
 
 class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
+    private val tag = "TeslaFleetApi"
+
     internal var vehicleId: String = ""
         set
 
@@ -20,84 +24,125 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         set
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-lock
-    suspend fun lockDoors(): RestResult = executeRequest(
+    suspend fun lockDoors(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_lock"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-unlock
-    suspend fun unlockDoors(): RestResult = executeRequest(
+    suspend fun unlockDoors(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_unlock"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#flash-lights
-    suspend fun flashLights(): RestResult = executeRequest(
+    suspend fun flashLights(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/flash_lights"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#honk-horn
-    suspend fun honkHorn(): RestResult = executeRequest(
+    suspend fun honkHorn(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/honk_horn"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
-    suspend fun rearTrunk(): RestResult = executeRequest(
+    suspend fun rearTrunk(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
         body = "{\"which_trunk\": \"rear\"}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
-    suspend fun frontTrunk(): RestResult = executeRequest(
+    suspend fun frontTrunk(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
         body = "{\"which_trunk\": \"front\"}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-stop
-    suspend fun climateOff(): RestResult = executeRequest(
+    suspend fun climateOff(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_stop"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-start
-    suspend fun climateOn(): RestResult = executeRequest(
+    suspend fun climateOn(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_start"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-close
-    suspend fun chargeClose(): RestResult = executeRequest(
+    suspend fun chargeClose(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_close"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-open
-    suspend fun chargeOpen(): RestResult = executeRequest(
+    suspend fun chargeOpen(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_open"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#wake-up
-    suspend fun wake(): RestResult = executeRequest(
+    suspend fun wakeUp(): HttpResult = executeRequest(
         method = "POST",
         url = "$baseUrl/api/1/vehicles/$vehicleId/wake_up"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#vehicle
-    suspend fun vehicle(): RestResult = executeRequest(
+    suspend fun vehicle(): HttpResult = executeRequest(
         method = "GET",
         url = "$baseUrl/api/1/vehicles/$vehicleId"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#vehicle-data
-    suspend fun vehicleData(): RestResult = executeRequest(
+    suspend fun vehicleData(): HttpResult = executeRequest(
         method = "GET",
         url = "$baseUrl/api/1/vehicles/$vehicleId/vehicle_data"
     )
+
+    // https://developer.tesla.com/docs/fleet-api/getting-started/best-practices#ensure-connectivity-state-before-interacting-with-a-device
+    suspend fun waitForVehicleOnline(maxRetries: Int = 10): HttpResult {
+        for (retryCount in 0 until maxRetries) {
+            try {
+                val vehicleStatus = vehicle()
+                if (vehicleStatus is HttpResult.Failure) {
+                    Log.d(tag, "Failed to retrieve vehicle status: HTTP ${vehicleStatus.statusCode}")
+                    return vehicleStatus
+                }
+
+                val state = JSONObject((vehicleStatus as HttpResult.Success).data)
+                    .getJSONObject("response")
+                    .getString("state")
+
+                if (state == "online") {
+                    Log.d(tag, "Vehicle came online after ${retryCount + 1} attempts")
+                    return HttpResult.Success(200)
+                }
+
+                if (retryCount == 0) {
+                    val wakeResult = wakeUp()
+                    if (wakeResult is HttpResult.Failure) {
+                        Log.d(tag, "Failed to wake up the vehicle: HTTP ${wakeResult.statusCode}")
+                        return wakeResult
+                    }
+                    delay(8000L) // start checking after 8+1 sec
+                }
+
+                delay(1000L)
+            } catch (e: Exception) {
+                Log.e(tag, "Failed to parse vehicle state: ${e.message}")
+                return HttpResult.Failure(500)
+            }
+
+            Log.d(tag, "Vehicle not online yet. Retry attempt ${retryCount + 1}/${maxRetries}")
+        }
+
+        Log.d(tag, "Max retries reached. Vehicle did not come online")
+        return HttpResult.Failure(408)
+    }
 
     // process the request
     private val client = OkHttpClient()
@@ -106,9 +151,7 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         url: String,
         headers: Map<String, String> = emptyMap(),
         body: String? = null
-    ): RestResult = withContext(Dispatchers.IO) {
-        val tag = "TeslaFleetApi"
-
+    ): HttpResult = withContext(Dispatchers.IO) {
         // default headers
         val defaultHeaders = mapOf(
             "Content-Type" to "application/json",
@@ -144,15 +187,17 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         val responseBody = response.body?.string() ?: ""
         if (response.isSuccessful) {
             Log.d(tag, "http success code: ${response.code} body: $responseBody")
-            RestResult.Success(responseBody)
+            HttpResult.Success(response.code, responseBody)
         } else {
             Log.d(tag, "http failure code: ${response.code}")
-            RestResult.Failure(response.code)
+            HttpResult.Failure(response.code)
         }
     }
 }
 
-sealed class RestResult {
-    data class Success(val data: String) : RestResult()
-    data class Failure(val errorCode: Int?) : RestResult()
+data class VehicleState(val state: String)
+
+sealed class HttpResult {
+    data class Success(val statusCode: Int, val data: String = "") : HttpResult()
+    data class Failure(val statusCode: Int) : HttpResult()
 }
