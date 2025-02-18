@@ -14,100 +14,97 @@ import org.json.JSONObject
 // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands
 // https://developer.tesla.com/docs/fleet-api/getting-started/best-practices
 
-class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
+class TeslaFleetApi(
+    private val secureStorage: SecureStorage,
+    private val oauth2Client: OAuth2Client
+) {
     private val tag = "TeslaFleetApi"
-
-    internal var vehicleId: String = ""
-        set
-
-    internal var baseUrl: String = ""
-        set
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
     suspend fun frontTrunk(): HttpResult = executeRequest(
-        method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
-        body = "{\"which_trunk\": \"front\"}"
+        method   = "POST",
+        endpoint = "/api/1/vehicles/{vehicleId}/command/actuate_trunk",
+        body     = "{\"which_trunk\": \"front\"}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#actuate-trunk
     suspend fun rearTrunk(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/actuate_trunk",
+        endpoint = "/api/1/vehicles/{vehicleId}/command/actuate_trunk",
         body = "{\"which_trunk\": \"rear\"}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-start
     suspend fun climateOn(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_start"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/auto_conditioning_start"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#auto-conditioning-stop
     suspend fun climateOff(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/auto_conditioning_stop"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/auto_conditioning_stop"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-close
     suspend fun chargeClose(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_close"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/charge_port_door_close"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#charge-port-door-open
     suspend fun chargeOpen(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/charge_port_door_open"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/charge_port_door_open"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-lock
     suspend fun lockDoors(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_lock"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/door_lock"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#door-unlock
     suspend fun unlockDoors(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/door_unlock"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/door_unlock"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#flash-lights
     suspend fun flashLights(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/flash_lights"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/flash_lights"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#honk-horn
     suspend fun honkHorn(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/honk_horn"
+        endpoint = "/api/1/vehicles/{vehicleId}/command/honk_horn"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-commands#window-control
     suspend fun ventWindows(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/command/window_control",
+        endpoint = "/api/1/vehicles/{vehicleId}/command/window_control",
         body = "{\"command\": \"vent\"}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#wake-up
     suspend fun wakeUp(): HttpResult = executeRequest(
         method = "POST",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/wake_up"
+        endpoint = "/api/1/vehicles/{vehicleId}/wake_up"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#vehicle
     suspend fun vehicle(): HttpResult = executeRequest(
         method = "GET",
-        url = "$baseUrl/api/1/vehicles/$vehicleId"
+        endpoint = "/api/1/vehicles/{vehicleId}"
     )
 
     // https://developer.tesla.com/docs/fleet-api/endpoints/vehicle-endpoints#vehicle-data
     suspend fun vehicleData(): HttpResult = executeRequest(
         method = "GET",
-        url = "$baseUrl/api/1/vehicles/$vehicleId/vehicle_data"
+        endpoint = "/api/1/vehicles/{vehicleId}/vehicle_data"
     )
 
     // https://developer.tesla.com/docs/fleet-api/getting-started/best-practices#ensure-connectivity-state-before-interacting-with-a-device
@@ -155,10 +152,16 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
     private val client = OkHttpClient()
     private suspend fun executeRequest(
         method: String,
-        url: String,
+        endpoint: String,
         headers: Map<String, String> = emptyMap(),
         body: String? = null
     ): HttpResult = withContext(Dispatchers.IO) {
+        val baseUrl = secureStorage.retrieveBaseUrl()
+        val vehicleId = secureStorage.retrieveVin()
+
+        // substitute {vehicleId} with the actual vehicleId
+        val url = "$baseUrl${endpoint.replace("{vehicleId}", vehicleId)}"
+
         // default headers
         val defaultHeaders = mapOf(
             "Content-Type" to "application/json",
@@ -201,8 +204,6 @@ class TeslaFleetApi(private val oauth2Client: OAuth2Client) {
         }
     }
 }
-
-data class VehicleState(val state: String)
 
 sealed class HttpResult {
     data class Success(val statusCode: Int, val data: String = "") : HttpResult()

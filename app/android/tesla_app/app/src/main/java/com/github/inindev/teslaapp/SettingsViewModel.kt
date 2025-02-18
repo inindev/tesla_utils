@@ -102,15 +102,16 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
             Log.d("VINValidation", "VIN is empty")
             return ValidationState.EMPTY
         }
-        if (vin.length < 17) {
-            Log.d("VINValidation", "VIN length less than 17: ${vin.length}")
-            return ValidationState.VALID_BUT_INCOMPLETE
-        }
 
         val validChars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789"
         if (!vin.all { it in validChars }) {
             Log.d("VINValidation", "VIN contains invalid characters")
             return ValidationState.INVALID
+        }
+
+        if (vin.length < 17) {
+            Log.d("VINValidation", "VIN length less than 17: ${vin.length}")
+            return ValidationState.VALID_BUT_INCOMPLETE
         }
 
         // convert character to its numeric value for check digit calculation
@@ -137,16 +138,14 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
         val calculatedCheckDigit = map[sum % 11].also {
             Log.d("VINValidation", "Check digit calculated as $it")
         }
-
         // compare calculated check digit with the one in the VIN
-        val result = if (calculatedCheckDigit == vin[8]) {
-            Log.d("VINValidation", "VIN is VALID")
-            ValidationState.VALID
-        } else {
+        if (calculatedCheckDigit != vin[8]) {
             Log.d("VINValidation", "VIN is INVALID. Calculated check digit: $calculatedCheckDigit, Actual: ${vin[8]}")
             ValidationState.INVALID
         }
-        return result
+
+        Log.d("VINValidation", "VIN is VALID")
+        return ValidationState.VALID
     }
 
     private fun isValidBaseUrl(url: String): ValidationState {
@@ -195,5 +194,19 @@ class SettingsViewModel(private val secureStorage: SecureStorage) : ViewModel() 
 
         // if it doesn't match any of the above, it's invalid
         return ValidationState.INVALID
+    }
+
+    fun validateSettings(): Boolean {
+        val currentSettings = _settingsState.value
+        val vinValid = isValidVin(currentSettings.vin)
+        val baseUrlValid = isValidBaseUrl(currentSettings.baseUrl)
+        val clientIdValid = isValidUuid(currentSettings.clientId)
+        val clientSecretValid = isValidClientSecret(currentSettings.clientSecret)
+
+        // ValidationState.VALID is the only state we consider as valid
+        return vinValid == ValidationState.VALID &&
+                baseUrlValid == ValidationState.VALID &&
+                clientIdValid == ValidationState.VALID &&
+                clientSecretValid == ValidationState.VALID
     }
 }

@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -17,8 +18,9 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     private lateinit var secureStorage: SecureStorage
     private lateinit var oauth2Client: OAuth2Client
+    private lateinit var settingsViewModel: SettingsViewModel
     private val viewModel: MainViewModel by viewModels {
-        MainViewModelFactory(secureStorage, oauth2Client)
+        MainViewModelFactory(secureStorage, oauth2Client, settingsViewModel)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
         secureStorage = SecureStorage(this)
         oauth2Client = OAuth2Client(secureStorage)
+        settingsViewModel = ViewModelProvider(this, SettingsViewModelFactory(secureStorage)).get(SettingsViewModel::class.java)
 
         setContent {
             TeslaAppTheme {

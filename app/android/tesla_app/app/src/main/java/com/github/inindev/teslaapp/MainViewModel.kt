@@ -9,9 +9,13 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(
     private val secureStorage: SecureStorage,
-    private val oauth2Client: OAuth2Client
+    private val oauth2Client: OAuth2Client,
+    private val settingsViewModel: SettingsViewModel
 ) : ViewModel() {
-    private val fleetApi: TeslaFleetApi = TeslaFleetApi(oauth2Client)
+    private val fleetApi: TeslaFleetApi = TeslaFleetApi(secureStorage, oauth2Client)
+
+    private val _settingsValid = MutableStateFlow(false)
+    val settingsValid: StateFlow<Boolean> = _settingsValid.asStateFlow()
 
     private val _isAuthenticating = MutableStateFlow(false)
     val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
@@ -22,13 +26,13 @@ class MainViewModel(
     private val _jsonContent = MutableStateFlow("")
     val jsonContent: StateFlow<String> = _jsonContent.asStateFlow()
 
-    init {
-        val vin = secureStorage.retrieveVin()
-        val baseUrl = secureStorage.retrieveBaseUrl()
-        fleetApi.apply {
-            this.vehicleId = vin
-            this.baseUrl = baseUrl
-        }
+    fun onSettingsUpdated() {
+        // check if settings are valid using the SettingsViewModel checks
+        // then test if an auth token is available
+        _settingsValid.value = (
+            settingsViewModel.validateSettings() &&
+            !oauth2Client.getAccessToken().isNullOrBlank()
+        )
     }
 
     fun setIsAuthenticating(value: Boolean) {
