@@ -15,7 +15,7 @@ import org.json.JSONObject
 // https://developer.tesla.com/docs/fleet-api/getting-started/best-practices
 
 class TeslaFleetApi(
-    private val secureStorage: SecureStorage,
+    private val settingsRepository: SettingsRepository,
     private val oauth2Client: OAuth2Client
 ) {
     private val tag = "TeslaFleetApi"
@@ -156,16 +156,22 @@ class TeslaFleetApi(
         headers: Map<String, String> = emptyMap(),
         body: String? = null
     ): HttpResult = withContext(Dispatchers.IO) {
-        val baseUrl = secureStorage.retrieveBaseUrl()
-        val vehicleId = secureStorage.retrieveVin()
+        val accessToken = oauth2Client.getAccessToken()
+        if (accessToken == null) {
+            Log.e(tag, "No valid token available for API call")
+            return@withContext HttpResult.Failure(401) // unauthorized
+        }
 
         // substitute {vehicleId} with the actual vehicleId
+        val settings = settingsRepository.loadSettings()
+        val baseUrl = settings.baseUrl
+        val vehicleId = settings.vin
         val url = "$baseUrl${endpoint.replace("{vehicleId}", vehicleId)}"
 
         // default headers
         val defaultHeaders = mapOf(
             "Content-Type" to "application/json",
-            "Authorization" to "Bearer ${oauth2Client.getAccessToken()}"
+            "Authorization" to "Bearer $accessToken"
         )
 
         // merge headers: allow provided headers to override defaults

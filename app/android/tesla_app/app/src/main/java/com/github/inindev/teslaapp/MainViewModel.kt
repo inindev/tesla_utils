@@ -1,5 +1,7 @@
 package com.github.inindev.teslaapp
 
+import android.content.Context
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,11 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MainViewModel(
-    private val secureStorage: SecureStorage,
+    private val settingsRepository: SettingsRepository,
     private val oauth2Client: OAuth2Client,
-    private val settingsViewModel: SettingsViewModel
 ) : ViewModel() {
-    private val fleetApi: TeslaFleetApi = TeslaFleetApi(secureStorage, oauth2Client)
+    private val fleetApi: TeslaFleetApi = TeslaFleetApi(settingsRepository, oauth2Client)
 
     private val _settingsValid = MutableStateFlow(false)
     val settingsValid: StateFlow<Boolean> = _settingsValid.asStateFlow()
@@ -26,17 +27,12 @@ class MainViewModel(
     private val _jsonContent = MutableStateFlow("")
     val jsonContent: StateFlow<String> = _jsonContent.asStateFlow()
 
-    fun onSettingsUpdated() {
-        // check if settings are valid using the SettingsViewModel checks
-        // then test if an auth token is available
-        _settingsValid.value = (
-            settingsViewModel.validateSettings() &&
-            !oauth2Client.getAccessToken().isNullOrBlank()
-        )
-    }
-
     fun setIsAuthenticating(value: Boolean) {
         viewModelScope.launch { _isAuthenticating.value = value }
+    }
+
+    fun updateSettingsValid(isValid: Boolean) {
+        viewModelScope.launch { _settingsValid.value = isValid }
     }
 
     fun updateStatusText(newStatus: String) {
@@ -179,6 +175,21 @@ class MainViewModel(
         )
     }
 
+    fun initiateAuthFlow(context: Context) {
+        viewModelScope.launch {
+            setIsAuthenticating(true)
+            try {
+                updateStatusText("Authentication process started...")
+                val authUri = oauth2Client.initiateAuthFlow()
+                val customTabsIntent = CustomTabsIntent.Builder().build()
+                customTabsIntent.launchUrl(context, authUri)
+            } catch (e: Exception) {
+                updateStatusText("Authentication failed: ${e.message}")
+                setIsAuthenticating(false)
+            }
+        }
+    }
+
     private fun execApiCmd(
         operation: suspend () -> HttpResult,
         onSuccess: (String) -> Unit,
@@ -200,7 +211,12 @@ class MainViewModel(
                         onSuccess(result.data)
                     }
                     is HttpResult.Failure -> {
-                        onFailure("HTTP ${result.statusCode}")
+                        when (result.statusCode) {
+                            401 -> updateStatusText("Token unavailable. Please re-authenticate in Settings.")
+                            404 -> updateStatusText("Vehicle not found. Check VIN in Settings.")
+                            408 -> updateStatusText("Vehicle offline. Try waking it up.")
+                            else -> onFailure("HTTP ${result.statusCode}")
+                        }
                     }
                 }
             } catch (e: Exception) {

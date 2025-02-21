@@ -2,11 +2,11 @@ package com.github.inindev.teslaapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -18,9 +18,14 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     private lateinit var secureStorage: SecureStorage
     private lateinit var oauth2Client: OAuth2Client
-    private lateinit var settingsViewModel: SettingsViewModel
-    private val viewModel: MainViewModel by viewModels {
-        MainViewModelFactory(secureStorage, oauth2Client, settingsViewModel)
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var settingsValidator: SettingsValidator
+
+    private val mainViewModel: MainViewModel by viewModels {
+        MainViewModelFactory(settingsRepository, oauth2Client)
+    }
+    private val settingsViewModel: SettingsViewModel by viewModels {
+        SettingsViewModelFactory(settingsRepository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,13 +34,22 @@ class MainActivity : ComponentActivity() {
 
         secureStorage = SecureStorage(this)
         oauth2Client = OAuth2Client(secureStorage)
-        settingsViewModel = ViewModelProvider(this, SettingsViewModelFactory(secureStorage)).get(SettingsViewModel::class.java)
+        settingsRepository = SettingsRepository(secureStorage)
+        settingsValidator = SettingsValidator()
+
+        // check settings validity on startup
+        lifecycleScope.launch {
+            val settings = settingsRepository.loadSettings()
+            val isValid = settingsValidator.validateSettings(settings)
+            mainViewModel.updateSettingsValid(isValid)
+            Log.d("MainActivity", "Initial settings valid: $isValid")
+        }
 
         setContent {
             TeslaAppTheme {
                 val navController = rememberNavController()
                 val navHostController = navController as NavHostController
-                NavGraph(navHostController, secureStorage, oauth2Client, viewModel)
+                NavGraph(navHostController, oauth2Client, mainViewModel, settingsViewModel)
             }
         }
 
@@ -54,7 +68,7 @@ class MainActivity : ComponentActivity() {
         // check if the intent contains the expected data from the OAuth callback
         val uri = intent.data
         if (uri == null) {
-            viewModel.updateStatusText("Error: URI is null")
+            mainViewModel.updateStatusText("Error: URI is null")
             return
         }
 
@@ -68,12 +82,12 @@ class MainActivity : ComponentActivity() {
             // callback to ui thread
             when (result) {
                 is OAuth2Client.AuthResult.Success -> {
-                    viewModel.updateStatusText("Authentication successful")
-                    viewModel.setIsAuthenticating(false)
+                    mainViewModel.updateStatusText("Authentication successful")
+                    mainViewModel.setIsAuthenticating(false)
                 }
                 is OAuth2Client.AuthResult.Failure -> {
-                    viewModel.updateStatusText("Authentication failed: ${result.errorMessage}")
-                    viewModel.setIsAuthenticating(false)
+                    mainViewModel.updateStatusText("Authentication failed: ${result.errorMessage}")
+                    mainViewModel.setIsAuthenticating(false)
                 }
             }
         }

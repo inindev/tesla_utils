@@ -2,7 +2,7 @@ package com.github.inindev.teslaapp
 
 import android.content.Intent
 import android.net.Uri
-import androidx.browser.customtabs.CustomTabsIntent
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -41,21 +41,25 @@ import java.util.Locale
 import java.util.TimeZone
 
 @Composable
-fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorage, oauth2Client: OAuth2Client, viewModel: MainViewModel) {
+fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel) {
     val context = LocalContext.current
-    val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModelFactory(secureStorage))
     val settings by settingsViewModel.settingsState.collectAsState()
+    val statusText by mainViewModel.statusText.collectAsState()
 
-    // load settings when the screen is composed
     LaunchedEffect(Unit) {
         settingsViewModel.loadSettings()
     }
 
+    // update settingsValid when settings change
+    LaunchedEffect(settings) {
+        val isValid = SettingsValidator().validateSettings(settings)
+        mainViewModel.updateSettingsValid(isValid)
+        if (isValid) mainViewModel.updateStatusText("Settings saved successfully")
+        Log.d("SettingsScreen", "Settings updated, valid: $isValid")
+    }
+
     Scaffold(
-        bottomBar = {
-            val statusText by viewModel.statusText.collectAsState()
-            StatusBar(statusText = statusText)
-        }
+        bottomBar = { StatusBar(statusText = statusText) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -98,22 +102,25 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                     .padding(top = 16.dp),
                 textStyle = LocalTextStyle.current.copy(
                     color = when (vinValidationState) {
-                        SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface
+                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                        else -> MaterialTheme.colorScheme.onSurface
                     }
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Ascii,
+                    imeAction = ImeAction.Next
+                ),
                 trailingIcon = {
                     when (vinValidationState) {
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Incomplete",
+                            contentDescription = "VIN incomplete",
                             tint = ValidationWarningColor
                         )
-                        SettingsViewModel.ValidationState.INVALID -> Icon(
+                        SettingsValidator.ValidationState.INVALID -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Error",
+                            contentDescription = "Invalid VIN",
                             tint = MaterialTheme.colorScheme.error
                         )
                         else -> { } // No icon for VALID or EMPTY
@@ -124,7 +131,8 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         "XXXXXXXXXXXXXXXXX",
                         color = Color.LightGray
                     )
-                }
+                },
+                isError = vinValidationState == SettingsValidator.ValidationState.INVALID
             )
             ValidationFeedback(
                 validationState = vinValidationState,
@@ -143,22 +151,25 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                     .padding(top = 8.dp),
                 textStyle = LocalTextStyle.current.copy(
                     color = when (baseUrlValidationState) {
-                        SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface
+                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                        else -> MaterialTheme.colorScheme.onSurface
                     }
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Next
+                ),
                 trailingIcon = {
                     when (baseUrlValidationState) {
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Incomplete",
+                            contentDescription = "Base URL incomplete",
                             tint = ValidationWarningColor
                         )
-                        SettingsViewModel.ValidationState.INVALID -> Icon(
+                        SettingsValidator.ValidationState.INVALID -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Error",
+                            contentDescription = "Invalid Base URL",
                             tint = MaterialTheme.colorScheme.error
                         )
                         else -> { } // No icon for VALID or EMPTY
@@ -169,7 +180,8 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         "https://hostname",
                         color = Color.LightGray
                     )
-                }
+                },
+                isError = baseUrlValidationState == SettingsValidator.ValidationState.INVALID
             )
             ValidationFeedback(
                 validationState = baseUrlValidationState,
@@ -198,26 +210,27 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                 // set text color based on validation state
                 textStyle = LocalTextStyle.current.copy(
                     color = when (clientIdValidationState) {
-                        SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface // Default
+                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                        else -> MaterialTheme.colorScheme.onSurface // Default
                     }
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Ascii,
+                    imeAction = ImeAction.Next
+                ),
                 trailingIcon = {
                     when (clientIdValidationState) {
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Incomplete",
+                            contentDescription = "Client ID incomplete",
                             tint = ValidationWarningColor
                         )
-
-                        SettingsViewModel.ValidationState.INVALID -> Icon(
+                        SettingsValidator.ValidationState.INVALID -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Error",
+                            contentDescription = "Invalid Client ID",
                             tint = MaterialTheme.colorScheme.error
                         )
-
                         else -> { } // No icon for VALID or EMPTY
                     }
                 },
@@ -226,7 +239,8 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                         "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
                         color = Color.LightGray
                     )
-                }
+                },
+                isError = clientIdValidationState == SettingsValidator.ValidationState.INVALID
             )
             // warning / error message below the TextField
             ValidationFeedback(
@@ -247,31 +261,33 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
                 // set text color based on validation state
                 textStyle = LocalTextStyle.current.copy(
                     color = when (clientSecretValidationState) {
-                        SettingsViewModel.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        SettingsViewModel.ValidationState.VALID, SettingsViewModel.ValidationState.EMPTY -> MaterialTheme.colorScheme.onSurface // Default
+                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                        else -> MaterialTheme.colorScheme.onSurface // Default
                     }
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Ascii,
+                    imeAction = ImeAction.Done
+                ),
                 trailingIcon = {
                     when (clientSecretValidationState) {
-                        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Incomplete",
+                            contentDescription = "Client Secret incomplete",
                             tint = ValidationWarningColor
                         )
-
-                        SettingsViewModel.ValidationState.INVALID -> Icon(
+                        SettingsValidator.ValidationState.INVALID -> Icon(
                             imageVector = Icons.Default.Warning,
-                            contentDescription = "Error",
+                            contentDescription = "Invalid Client Secret",
                             tint = MaterialTheme.colorScheme.error
                         )
-
                         else -> { } // No icon for VALID or EMPTY
                     }
                 },
                 // Placeholder text
-                placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) }
+                placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) },
+                isError = clientSecretValidationState == SettingsValidator.ValidationState.INVALID
             )
             // Add a message below the Client Secret field for validation feedback
             ValidationFeedback(
@@ -318,49 +334,36 @@ fun SettingsScreen(navController: NavHostController, secureStorage: SecureStorag
 
                 // Authenticate Button
                 val scope = rememberCoroutineScope()
-                val isAuthenticating by viewModel.isAuthenticating.collectAsState()
+                val isAuthenticating by mainViewModel.isAuthenticating.collectAsState()
                 Button(
                     onClick = {
-                        viewModel.setIsAuthenticating(true)
-                        scope.launch {
-                            try {
-                                // only proceed with authentication if the clientId is VALID
-                                if (clientIdValidationState == SettingsViewModel.ValidationState.VALID) {
-                                    // begin oauth2 authentication sequence
-                                    viewModel.updateStatusText("Authentication process started...")
-                                    val authUri = oauth2Client.initiateAuthFlow()
-                                    val customTabsIntent = CustomTabsIntent.Builder().build()
-                                    customTabsIntent.launchUrl(context, authUri)
-                                } else {
-                                    viewModel.updateStatusText("Please enter a valid Client ID to authenticate.")
-                                    viewModel.setIsAuthenticating(false)
-                                }
-                            } catch (e: Exception) {
-                                viewModel.updateStatusText("Authentication failed: ${e.message}")
-                                viewModel.setIsAuthenticating(false)
-                            }
+                        if (clientIdValidationState == SettingsValidator.ValidationState.VALID) {
+                            mainViewModel.initiateAuthFlow(context)
+                        } else {
+                            mainViewModel.updateStatusText("Please enter a valid Client ID to authenticate.")
+                            mainViewModel.setIsAuthenticating(false)
                         }
                     },
-                    enabled = clientIdValidationState == SettingsViewModel.ValidationState.VALID && !isAuthenticating,
+                    enabled = clientIdValidationState == SettingsValidator.ValidationState.VALID && !isAuthenticating,
                 ) {
                     Text("Authenticate")
                 }
             }
 
             // Usage in SettingsScreen
-            TokenInfoDisplay(oauth2Client, viewModel)
+            TokenInfoDisplay(oauth2Client, mainViewModel)
         }
     }
 }
 
 @Composable
 fun ValidationFeedback(
-    validationState: SettingsViewModel.ValidationState,
+    validationState: SettingsValidator.ValidationState,
     validButIncompleteMessage: String,
     invalidMessage: String
 ) {
     when (validationState) {
-        SettingsViewModel.ValidationState.VALID_BUT_INCOMPLETE -> {
+        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> {
             Text(
                 text = validButIncompleteMessage,
                 color = ValidationWarningColor,
@@ -368,7 +371,7 @@ fun ValidationFeedback(
                 modifier = Modifier.padding(start = 16.dp)
             )
         }
-        SettingsViewModel.ValidationState.INVALID -> {
+        SettingsValidator.ValidationState.INVALID -> {
             Text(
                 text = invalidMessage,
                 color = MaterialTheme.colorScheme.error,
@@ -451,16 +454,13 @@ fun Long.formatDateTime(): String {
     val utcDate = Date(this)
     val localTimeZone = TimeZone.getDefault()
 
-    // Create a SimpleDateFormat for UTC time
-    val utcFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    utcFormat.timeZone = TimeZone.getTimeZone("UTC")
-
-    // Parse the UTC date string into a Date object in local time
+    val utcFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val localFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).apply {
+        timeZone = localTimeZone
+    }
     val localDate = utcFormat.parse(utcFormat.format(utcDate))!!
-
-    // Create a SimpleDateFormat for local time
-    val localFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    localFormat.timeZone = localTimeZone
 
     return localFormat.format(localDate)
 }

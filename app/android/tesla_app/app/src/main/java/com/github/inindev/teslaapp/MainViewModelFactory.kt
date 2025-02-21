@@ -4,14 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
 class MainViewModelFactory(
-    private val secureStorage: SecureStorage,
-    private val oauth2Client: OAuth2Client,
-    private val settingsViewModel: SettingsViewModel
+    private val settingsRepository: SettingsRepository,
+    private val oauth2Client: OAuth2Client
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(secureStorage, oauth2Client, settingsViewModel) as T
+            return MainViewModel(settingsRepository, oauth2Client) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

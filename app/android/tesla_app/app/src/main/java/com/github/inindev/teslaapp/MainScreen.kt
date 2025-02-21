@@ -36,11 +36,10 @@ import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
-    val settingsValid = viewModel.settingsValid.collectAsState(initial = true).value
+    val settingsValid = viewModel.settingsValid.collectAsState(initial = false).value
     val statusText = viewModel.statusText.collectAsState().value
 
     LaunchedEffect(Unit) {
-        viewModel.onSettingsUpdated()
         viewModel.updateStatusText("Status: Ready")
     }
 
