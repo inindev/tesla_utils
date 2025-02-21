@@ -21,6 +21,9 @@ class MainViewModel(
     private val _isAuthenticating = MutableStateFlow(false)
     val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
 
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+    val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
+
     private val _statusText = MutableStateFlow("Status: Ready")
     val statusText: StateFlow<String> = _statusText.asStateFlow()
 
@@ -33,6 +36,10 @@ class MainViewModel(
 
     fun updateSettingsValid(isValid: Boolean) {
         viewModelScope.launch { _settingsValid.value = isValid }
+    }
+
+    fun clearSnackbarMessage() {
+        _snackbarMessage.value = null
     }
 
     fun updateStatusText(newStatus: String) {
@@ -212,7 +219,10 @@ class MainViewModel(
                     }
                     is HttpResult.Failure -> {
                         when (result.statusCode) {
-                            401 -> updateStatusText("Token unavailable. Please re-authenticate in Settings.")
+                            401 -> {
+                                updateStatusText("Token unavailable. Please re-authenticate in Settings.")
+                                _snackbarMessage.value = "Authentication failed. Please re-authenticate."
+                            }
                             404 -> updateStatusText("Vehicle not found. Check VIN in Settings.")
                             408 -> updateStatusText("Vehicle offline. Try waking it up.")
                             else -> onFailure("HTTP ${result.statusCode}")

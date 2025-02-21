@@ -8,7 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.github.inindev.teslaapp.ui.theme.TeslaAppTheme
 import kotlinx.coroutines.Dispatchers
@@ -48,8 +47,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             TeslaAppTheme {
                 val navController = rememberNavController()
-                val navHostController = navController as NavHostController
-                NavGraph(navHostController, oauth2Client, mainViewModel, settingsViewModel)
+                NavGraph(navController, oauth2Client, mainViewModel, settingsViewModel)
             }
         }
 
