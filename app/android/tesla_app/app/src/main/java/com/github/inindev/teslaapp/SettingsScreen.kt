@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -66,21 +68,24 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(start = 8.dp, end = 8.dp)
         ) {
             item {
                 SettingsHeader(navController)
+
+                Text("Tesla Service Setup", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
                 VinInput(settings, settingsViewModel)
                 BaseUrlInput(settings, settingsViewModel)
 
                 HorizontalDivider(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 32.dp, bottom = 16.dp),
+                        .padding(top = 28.dp, bottom = 16.dp),
                     thickness = 1.dp,
                     color = Color.LightGray
                 )
 
+                Text("Authentication Credentials", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
                 ClientIdInput(settings, settingsViewModel)
                 ClientSecretInput(settings, settingsViewModel)
 
@@ -97,14 +102,12 @@ fun SettingsHeader(navController: NavHostController) {
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp), // Add padding at the bottom for spacing
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { navController.popBackStack() }) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
         }
-        Spacer(modifier = Modifier.width(8.dp)) // Add space between icon and text
         Text("Settings", style = MaterialTheme.typography.headlineMedium)
     }
 
@@ -128,7 +131,7 @@ fun VinInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsVi
         label = { Text("VIN") },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp),
+            .padding(8.dp),
         textStyle = LocalTextStyle.current.copy(
             color = when (vinValidationState) {
                 SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
@@ -157,12 +160,7 @@ fun VinInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsVi
                 else -> {} // No icon for VALID or EMPTY
             }
         },
-        placeholder = {
-            Text(
-                "XXXXXXXXXXXXXXXXX",
-                color = Color.LightGray
-            )
-        },
+        placeholder = { Text("XXXXXXXXXXXXXXXXX", color = Color.LightGray) },
         isError = vinValidationState == SettingsValidator.ValidationState.INVALID
     )
     ValidationFeedback(
@@ -182,7 +180,7 @@ fun BaseUrlInput(settings: SettingsViewModel.Settings, settingsViewModel: Settin
         label = { Text("Base URL") },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(8.dp),
         textStyle = LocalTextStyle.current.copy(
             color = when (baseUrlValidationState) {
                 SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
@@ -211,12 +209,7 @@ fun BaseUrlInput(settings: SettingsViewModel.Settings, settingsViewModel: Settin
                 else -> {} // No icon for VALID or EMPTY
             }
         },
-        placeholder = {
-            Text(
-                "https://hostname",
-                color = Color.LightGray
-            )
-        },
+        placeholder = { Text("https://hostname", color = Color.LightGray) },
         isError = baseUrlValidationState == SettingsValidator.ValidationState.INVALID
     )
     ValidationFeedback(
@@ -236,7 +229,7 @@ fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: Setti
         label = { Text("Client ID") },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp),
+            .padding(8.dp),
         // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (clientIdValidationState) {
@@ -266,15 +259,9 @@ fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: Setti
                 else -> {} // No icon for VALID or EMPTY
             }
         },
-        placeholder = {
-            Text(
-                "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                color = Color.LightGray
-            )
-        },
+        placeholder = { Text("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", color = Color.LightGray) },
         isError = clientIdValidationState == SettingsValidator.ValidationState.INVALID
     )
-    // warning / error message below the TextField
     ValidationFeedback(
         validationState = clientIdValidationState,
         validButIncompleteMessage = "Client ID is partially valid but incomplete. Please complete the UUID format.",
@@ -291,7 +278,7 @@ fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: S
         label = { Text("Client Secret") },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp),
+            .padding(8.dp),
         // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (clientSecretValidationState) {
@@ -321,11 +308,9 @@ fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: S
                 else -> {} // No icon for VALID or EMPTY
             }
         },
-        // Placeholder text
         placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) },
         isError = clientSecretValidationState == SettingsValidator.ValidationState.INVALID
     )
-    // Add a message below the Client Secret field for validation feedback
     ValidationFeedback(
         validationState = clientSecretValidationState,
         validButIncompleteMessage = "Client Secret is partially valid but incomplete. Please enter the full 26 characters.",
@@ -386,7 +371,10 @@ fun AuthenticateSection(context: android.content.Context, mainViewModel: MainVie
             modifier = Modifier
                 .padding(top = 8.dp)
                 .align(Alignment.End)
+                .height(48.dp)
         ) {
+            Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
             Text("Authenticate")
         }
     }
@@ -454,7 +442,10 @@ fun TokenInfoDisplay(oauth2Client: OAuth2Client, viewModel: MainViewModel) {
             modifier = Modifier
                 .padding(top = 8.dp)
                 .align(Alignment.End)
+                .height(48.dp)
         ) {
+            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
             Text("Refresh Token")
         }
     }
