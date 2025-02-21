@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -61,325 +62,333 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
     Scaffold(
         bottomBar = { StatusBar(statusText = statusText) }
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            item {
+                SettingsHeader(navController)
+                VinInput(settings, settingsViewModel)
+                BaseUrlInput(settings, settingsViewModel)
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp), // Add padding at the bottom for spacing
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-                Spacer(modifier = Modifier.width(8.dp)) // Add space between icon and text
-                Text("Settings", style = MaterialTheme.typography.headlineMedium)
-            }
-
-            // thin line under the title and arrow
-            HorizontalDivider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                thickness = 1.dp,
-                color = Color.LightGray
-            )
-
-            // VIN
-            val vinValidationState by settingsViewModel.vinValidationState.collectAsState()
-            OutlinedTextField(
-                value = settings.vin,
-                onValueChange = { settingsViewModel.updateVin(it.uppercase()) },
-                label = { Text("VIN") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                textStyle = LocalTextStyle.current.copy(
-                    color = when (vinValidationState) {
-                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Ascii,
-                    imeAction = ImeAction.Next
-                ),
-                trailingIcon = {
-                    when (vinValidationState) {
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "VIN incomplete",
-                            tint = ValidationWarningColor
-                        )
-                        SettingsValidator.ValidationState.INVALID -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Invalid VIN",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        else -> { } // No icon for VALID or EMPTY
-                    }
-                },
-                placeholder = {
-                    Text(
-                        "XXXXXXXXXXXXXXXXX",
-                        color = Color.LightGray
-                    )
-                },
-                isError = vinValidationState == SettingsValidator.ValidationState.INVALID
-            )
-            ValidationFeedback(
-                validationState = vinValidationState,
-                validButIncompleteMessage = "VIN is partially valid but too short. Please enter all 17 characters.",
-                invalidMessage = "Not a valid VIN: Please enter a 17-character VIN with valid characters."
-            )
-
-            // Base URL
-            val baseUrlValidationState by settingsViewModel.baseUrlValidationState.collectAsState()
-            OutlinedTextField(
-                value = settings.baseUrl,
-                onValueChange = { settingsViewModel.updateBaseUrl(it) },
-                label = { Text("Base URL") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                textStyle = LocalTextStyle.current.copy(
-                    color = when (baseUrlValidationState) {
-                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Next
-                ),
-                trailingIcon = {
-                    when (baseUrlValidationState) {
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Base URL incomplete",
-                            tint = ValidationWarningColor
-                        )
-                        SettingsValidator.ValidationState.INVALID -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Invalid Base URL",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        else -> { } // No icon for VALID or EMPTY
-                    }
-                },
-                placeholder = {
-                    Text(
-                        "https://hostname",
-                        color = Color.LightGray
-                    )
-                },
-                isError = baseUrlValidationState == SettingsValidator.ValidationState.INVALID
-            )
-            ValidationFeedback(
-                validationState = baseUrlValidationState,
-                validButIncompleteMessage = "Base URL is partially valid but lacks full HTTPS specification. Please include scheme and host.",
-                invalidMessage = "Base URL is invalid. Must start with 'https://' and include a valid host."
-            )
-
-            // horizontal separator
-            HorizontalDivider(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 32.dp, bottom = 16.dp),
-                thickness = 1.dp,
-                color = Color.LightGray
-            )
-
-            // Client ID
-            val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
-            OutlinedTextField(
-                value = settings.clientId,
-                onValueChange = { settingsViewModel.updateClientId(it) },
-                label = { Text("Client ID") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                // set text color based on validation state
-                textStyle = LocalTextStyle.current.copy(
-                    color = when (clientIdValidationState) {
-                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        else -> MaterialTheme.colorScheme.onSurface // Default
-                    }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Ascii,
-                    imeAction = ImeAction.Next
-                ),
-                trailingIcon = {
-                    when (clientIdValidationState) {
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Client ID incomplete",
-                            tint = ValidationWarningColor
-                        )
-                        SettingsValidator.ValidationState.INVALID -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Invalid Client ID",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        else -> { } // No icon for VALID or EMPTY
-                    }
-                },
-                placeholder = {
-                    Text(
-                        "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-                        color = Color.LightGray
-                    )
-                },
-                isError = clientIdValidationState == SettingsValidator.ValidationState.INVALID
-            )
-            // warning / error message below the TextField
-            ValidationFeedback(
-                validationState = clientIdValidationState,
-                validButIncompleteMessage = "Client ID is partially valid but incomplete. Please complete the UUID format.",
-                invalidMessage = "Please enter a valid UUID format for Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            )
-
-            // Client Secret
-            val clientSecretValidationState by settingsViewModel.clientSecretValidationState.collectAsState()
-            OutlinedTextField(
-                value = settings.clientSecret,
-                onValueChange = { settingsViewModel.updateClientSecret(it) },
-                label = { Text("Client Secret") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                // set text color based on validation state
-                textStyle = LocalTextStyle.current.copy(
-                    color = when (clientSecretValidationState) {
-                        SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                        else -> MaterialTheme.colorScheme.onSurface // Default
-                    }
-                ),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Ascii,
-                    imeAction = ImeAction.Done
-                ),
-                trailingIcon = {
-                    when (clientSecretValidationState) {
-                        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Client Secret incomplete",
-                            tint = ValidationWarningColor
-                        )
-                        SettingsValidator.ValidationState.INVALID -> Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Invalid Client Secret",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        else -> { } // No icon for VALID or EMPTY
-                    }
-                },
-                // Placeholder text
-                placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) },
-                isError = clientSecretValidationState == SettingsValidator.ValidationState.INVALID
-            )
-            // Add a message below the Client Secret field for validation feedback
-            ValidationFeedback(
-                validationState = clientSecretValidationState,
-                validButIncompleteMessage = "Client Secret is partially valid but incomplete. Please enter the full 26 characters.",
-                invalidMessage = "Client Secret is invalid. It must start with 'ta-secret.' and be 26 characters long."
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Message with link
-                Text(
-                    text = buildAnnotatedString {
-                        append("The Client ID and Secret values can be found in the ")
-                        pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
-                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                            append("Tesla developer dashboard")
-                            addStringAnnotation(
-                                tag = "URL",
-                                annotation = "https://developer.tesla.com/en_US/dashboard",
-                                start = length - "Tesla developer dashboard".length,
-                                end = length
-                            )
-                        }
-                        pop()
-                        append(".")
-                    },
+                HorizontalDivider(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 32.dp)
-                        .clickable {
-                            val intent = Intent(
-                                Intent.ACTION_VIEW,
-                                Uri.parse("https://developer.tesla.com/en_US/dashboard")
-                            )
-                            context.startActivity(intent)
-                        },
+                        .fillMaxWidth()
+                        .padding(top = 32.dp, bottom = 16.dp),
+                    thickness = 1.dp,
+                    color = Color.LightGray
                 )
 
-                // Authenticate Button
-                val scope = rememberCoroutineScope()
-                val isAuthenticating by mainViewModel.isAuthenticating.collectAsState()
-                Button(
-                    onClick = {
-                        if (clientIdValidationState == SettingsValidator.ValidationState.VALID) {
-                            mainViewModel.initiateAuthFlow(context)
-                        } else {
-                            mainViewModel.updateStatusText("Please enter a valid Client ID to authenticate.")
-                            mainViewModel.setIsAuthenticating(false)
-                        }
-                    },
-                    enabled = clientIdValidationState == SettingsValidator.ValidationState.VALID && !isAuthenticating,
-                ) {
-                    Text("Authenticate")
-                }
-            }
+                ClientIdInput(settings, settingsViewModel)
+                ClientSecretInput(settings, settingsViewModel)
 
-            // Usage in SettingsScreen
-            TokenInfoDisplay(oauth2Client, mainViewModel)
+                AuthenticateSection(context, mainViewModel, settingsViewModel)
+                TokenInfoDisplay(oauth2Client, mainViewModel)
+            }
         }
     }
 }
 
 @Composable
-fun ValidationFeedback(
-    validationState: SettingsValidator.ValidationState,
-    validButIncompleteMessage: String,
-    invalidMessage: String
-) {
-    when (validationState) {
-        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> {
-            Text(
-                text = validButIncompleteMessage,
-                color = ValidationWarningColor,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(start = 16.dp)
-            )
+fun SettingsHeader(navController: NavHostController) {
+    Spacer(modifier = Modifier.height(24.dp))
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp), // Add padding at the bottom for spacing
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = { navController.popBackStack() }) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
         }
-        SettingsValidator.ValidationState.INVALID -> {
+        Spacer(modifier = Modifier.width(8.dp)) // Add space between icon and text
+        Text("Settings", style = MaterialTheme.typography.headlineMedium)
+    }
+
+    // thin line under the title and arrow
+    HorizontalDivider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        thickness = 1.dp,
+        color = Color.LightGray
+    )
+}
+
+@Composable
+fun VinInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
+    val vinValidationState by settingsViewModel.vinValidationState.collectAsState()
+
+    OutlinedTextField(
+        value = settings.vin,
+        onValueChange = { settingsViewModel.updateVin(it.uppercase()) },
+        label = { Text("VIN") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        textStyle = LocalTextStyle.current.copy(
+            color = when (vinValidationState) {
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                else -> MaterialTheme.colorScheme.onSurface
+            }
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Ascii,
+            imeAction = ImeAction.Next
+        ),
+        trailingIcon = {
+            when (vinValidationState) {
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "VIN incomplete",
+                    tint = ValidationWarningColor
+                )
+
+                SettingsValidator.ValidationState.INVALID -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Invalid VIN",
+                    tint = MaterialTheme.colorScheme.error
+                )
+
+                else -> {} // No icon for VALID or EMPTY
+            }
+        },
+        placeholder = {
             Text(
-                text = invalidMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(start = 16.dp)
+                "XXXXXXXXXXXXXXXXX",
+                color = Color.LightGray
             )
+        },
+        isError = vinValidationState == SettingsValidator.ValidationState.INVALID
+    )
+    ValidationFeedback(
+        validationState = vinValidationState,
+        validButIncompleteMessage = "VIN is partially valid but too short. Please enter all 17 characters.",
+        invalidMessage = "Not a valid VIN: Please enter a 17-character VIN with valid characters."
+    )
+}
+
+@Composable
+fun BaseUrlInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
+    val baseUrlValidationState by settingsViewModel.baseUrlValidationState.collectAsState()
+
+    OutlinedTextField(
+        value = settings.baseUrl,
+        onValueChange = { settingsViewModel.updateBaseUrl(it) },
+        label = { Text("Base URL") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        textStyle = LocalTextStyle.current.copy(
+            color = when (baseUrlValidationState) {
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                else -> MaterialTheme.colorScheme.onSurface
+            }
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Uri,
+            imeAction = ImeAction.Next
+        ),
+        trailingIcon = {
+            when (baseUrlValidationState) {
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Base URL incomplete",
+                    tint = ValidationWarningColor
+                )
+
+                SettingsValidator.ValidationState.INVALID -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Invalid Base URL",
+                    tint = MaterialTheme.colorScheme.error
+                )
+
+                else -> {} // No icon for VALID or EMPTY
+            }
+        },
+        placeholder = {
+            Text(
+                "https://hostname",
+                color = Color.LightGray
+            )
+        },
+        isError = baseUrlValidationState == SettingsValidator.ValidationState.INVALID
+    )
+    ValidationFeedback(
+        validationState = baseUrlValidationState,
+        validButIncompleteMessage = "Base URL is partially valid but lacks full HTTPS specification. Please include scheme and host.",
+        invalidMessage = "Base URL is invalid. Must start with 'https://' and include a valid host."
+    )
+}
+
+@Composable
+fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
+    val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
+
+    OutlinedTextField(
+        value = settings.clientId,
+        onValueChange = { settingsViewModel.updateClientId(it) },
+        label = { Text("Client ID") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        // set text color based on validation state
+        textStyle = LocalTextStyle.current.copy(
+            color = when (clientIdValidationState) {
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                else -> MaterialTheme.colorScheme.onSurface // Default
+            }
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Ascii,
+            imeAction = ImeAction.Next
+        ),
+        trailingIcon = {
+            when (clientIdValidationState) {
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Client ID incomplete",
+                    tint = ValidationWarningColor
+                )
+
+                SettingsValidator.ValidationState.INVALID -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Invalid Client ID",
+                    tint = MaterialTheme.colorScheme.error
+                )
+
+                else -> {} // No icon for VALID or EMPTY
+            }
+        },
+        placeholder = {
+            Text(
+                "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                color = Color.LightGray
+            )
+        },
+        isError = clientIdValidationState == SettingsValidator.ValidationState.INVALID
+    )
+    // warning / error message below the TextField
+    ValidationFeedback(
+        validationState = clientIdValidationState,
+        validButIncompleteMessage = "Client ID is partially valid but incomplete. Please complete the UUID format.",
+        invalidMessage = "Please enter a valid UUID format for Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    )
+}
+
+@Composable
+fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
+    val clientSecretValidationState by settingsViewModel.clientSecretValidationState.collectAsState()
+    OutlinedTextField(
+        value = settings.clientSecret,
+        onValueChange = { settingsViewModel.updateClientSecret(it) },
+        label = { Text("Client Secret") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        // set text color based on validation state
+        textStyle = LocalTextStyle.current.copy(
+            color = when (clientSecretValidationState) {
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
+                else -> MaterialTheme.colorScheme.onSurface // Default
+            }
+        ),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Ascii,
+            imeAction = ImeAction.Done
+        ),
+        trailingIcon = {
+            when (clientSecretValidationState) {
+                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Client Secret incomplete",
+                    tint = ValidationWarningColor
+                )
+
+                SettingsValidator.ValidationState.INVALID -> Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Invalid Client Secret",
+                    tint = MaterialTheme.colorScheme.error
+                )
+
+                else -> {} // No icon for VALID or EMPTY
+            }
+        },
+        // Placeholder text
+        placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) },
+        isError = clientSecretValidationState == SettingsValidator.ValidationState.INVALID
+    )
+    // Add a message below the Client Secret field for validation feedback
+    ValidationFeedback(
+        validationState = clientSecretValidationState,
+        validButIncompleteMessage = "Client Secret is partially valid but incomplete. Please enter the full 26 characters.",
+        invalidMessage = "Client Secret is invalid. It must start with 'ta-secret.' and be 26 characters long."
+    )
+}
+
+@Composable
+fun AuthenticateSection(context: android.content.Context, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel) {
+    val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, start = 16.dp, end = 16.dp),
+        horizontalAlignment = Alignment.Start
+    ) {
+        // Message with link
+        Text(
+            text = buildAnnotatedString {
+                append("The Client ID and Secret values can be found in the ")
+                pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+                withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                    append("Tesla developer dashboard")
+                    addStringAnnotation(
+                        tag = "URL",
+                        annotation = "https://developer.tesla.com/en_US/dashboard",
+                        start = length - "Tesla developer dashboard".length,
+                        end = length
+                    )
+                }
+                pop()
+                append(".")
+            },
+            modifier = Modifier
+                .clickable {
+                    val intent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://developer.tesla.com/en_US/dashboard")
+                    )
+                    context.startActivity(intent)
+                },
+        )
+
+        // Authenticate Button
+        val scope = rememberCoroutineScope()
+        val isAuthenticating by mainViewModel.isAuthenticating.collectAsState()
+        Button(
+            onClick = {
+                if (clientIdValidationState == SettingsValidator.ValidationState.VALID) {
+                    mainViewModel.initiateAuthFlow(context)
+                } else {
+                    mainViewModel.updateStatusText("Please enter a valid Client ID to authenticate.")
+                    mainViewModel.setIsAuthenticating(false)
+                }
+            },
+            enabled = clientIdValidationState == SettingsValidator.ValidationState.VALID && !isAuthenticating,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .align(Alignment.End)
+        ) {
+            Text("Authenticate")
         }
-        else -> { } // no message for VALID or EMPTY
     }
 }
 
@@ -388,12 +397,11 @@ fun TokenInfoDisplay(oauth2Client: OAuth2Client, viewModel: MainViewModel) {
     var tokenInfo by remember { mutableStateOf(oauth2Client.getJwtExpInfo()) }
     val scope = rememberCoroutineScope()
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp, start = 16.dp, end = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalAlignment = Alignment.Start
     ) {
         Column {
             Text(
@@ -442,10 +450,40 @@ fun TokenInfoDisplay(oauth2Client: OAuth2Client, viewModel: MainViewModel) {
                     }
                 }
             },
-            enabled = tokenInfo != null
+            enabled = tokenInfo != null,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .align(Alignment.End)
         ) {
             Text("Refresh Token")
         }
+    }
+}
+
+@Composable
+fun ValidationFeedback(
+    validationState: SettingsValidator.ValidationState,
+    validButIncompleteMessage: String,
+    invalidMessage: String
+) {
+    when (validationState) {
+        SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> {
+            Text(
+                text = validButIncompleteMessage,
+                color = ValidationWarningColor,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+        SettingsValidator.ValidationState.INVALID -> {
+            Text(
+                text = invalidMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+        else -> { } // no message for VALID or EMPTY
     }
 }
 
