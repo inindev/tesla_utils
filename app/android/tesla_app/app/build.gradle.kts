@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.security.crypto.ktx)
     implementation(libs.browser)
     implementation(libs.okhttp)
+    implementation(libs.compose.material.icons.extended)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

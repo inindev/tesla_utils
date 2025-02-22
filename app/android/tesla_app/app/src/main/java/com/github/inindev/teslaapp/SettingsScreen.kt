@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
@@ -173,7 +174,7 @@ fun VinInput(
         trailingIcon = {
             if (isModified) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert VIN",
                     modifier = Modifier
                         .clickable { onValueChange(storedValue) }
@@ -238,7 +239,7 @@ fun BaseUrlInput(
         trailingIcon = {
             if (isModified) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert Base URL",
                     modifier = Modifier
                         .clickable { onValueChange(storedValue) }
@@ -303,7 +304,7 @@ fun ClientIdInput(
         trailingIcon = {
             if (isModified) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert Client ID",
                     modifier = Modifier
                         .clickable { onValueChange(storedValue) }
@@ -368,7 +369,7 @@ fun ClientSecretInput(
         trailingIcon = {
             if (isModified) {
                 Icon(
-                    imageVector = Icons.Default.Refresh,
+                    imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert Client Secret",
                     modifier = Modifier
                         .clickable { onValueChange(storedValue) }
