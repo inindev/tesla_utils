@@ -2,6 +2,9 @@ package com.github.inindev.teslaapp
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,11 +63,17 @@ import java.util.Locale
 import java.util.TimeZone
 
 @Composable
-fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel) {
+fun SettingsScreen(
+    navController: NavHostController,
+    oauth2Client: OAuth2Client,
+    mainViewModel: MainViewModel,
+    settingsViewModel: SettingsViewModel
+) {
     val context = LocalContext.current
     val storedSettings by settingsViewModel.settingsState.collectAsState()
     val statusText by mainViewModel.statusText.collectAsState()
     val validator = SettingsValidator()
+    val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     // local state for staged changes
     var vin by remember { mutableStateOf(storedSettings.vin) }
@@ -78,18 +87,26 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
 
     // save staged changes on back navigation
     fun saveSettings() {
+        Log.d("SettingsScreen", "saveSettings() called at ${System.currentTimeMillis()}")
         val trimmedBaseUrl = baseUrl.trimEnd('/')
         val stagedSettings = SettingsViewModel.Settings(vin, trimmedBaseUrl, clientId, clientSecret)
-        val isValid = validator.validateSettings(stagedSettings)
-        // always save, regardless of validity
         settingsViewModel.updateVin(vin)
         settingsViewModel.updateBaseUrl(trimmedBaseUrl)
         settingsViewModel.updateClientId(clientId)
         settingsViewModel.updateClientSecret(clientSecret)
+        val isValid = validator.validateSettings(stagedSettings)
         val message = if (isValid) "Settings saved successfully" else "Settings invalid, saved anyway"
         mainViewModel.updateStatusText(message)
         mainViewModel.updateSettingsValid(isValid)
     }
+
+    BackHandler(enabled = true, onBack = {
+        saveSettings()
+        val success = navController.popBackStack()
+        if (!success) {
+            Log.w("SettingsScreen", "Navigation back failed; back stack might be empty")
+        }
+    })
 
     Scaffold(
         bottomBar = { StatusBar(statusText = statusText) }
@@ -101,12 +118,7 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
                 .padding(start = 8.dp, end = 8.dp)
         ) {
             item {
-                SettingsHeader(
-                    onBackClicked = {
-                        saveSettings() // save settings before navigating
-                        navController.popBackStack()
-                    }
-                )
+                SettingsHeader(onBackClicked = { backDispatcher?.onBackPressed() })
 
                 Text("Tesla Service Setup", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
                 VinInput(vin, storedSettings.vin, { vin = it }, validator)
@@ -134,10 +146,8 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
 @Composable
 fun SettingsHeader(onBackClicked: () -> Unit) {
     Spacer(modifier = Modifier.height(24.dp))
-
     Row(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBackClicked) {
@@ -148,9 +158,7 @@ fun SettingsHeader(onBackClicked: () -> Unit) {
 
     // thin line under the title and arrow
     HorizontalDivider(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
         thickness = 1.dp,
         color = Color.LightGray
     )
