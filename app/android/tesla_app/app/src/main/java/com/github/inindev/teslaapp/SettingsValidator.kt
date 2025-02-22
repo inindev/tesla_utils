@@ -10,7 +10,7 @@ class SettingsValidator {
         VALID
     }
 
-    fun isValidVin(vin: String): ValidationState {
+    fun validateVin(vin: String): ValidationState {
         Log.d("VINValidation", "VIN being validated: $vin")
 
         if (vin.isEmpty()) {
@@ -63,14 +63,14 @@ class SettingsValidator {
         return ValidationState.VALID
     }
 
-    fun isValidBaseUrl(url: String): ValidationState {
+    fun validateBaseUrl(url: String): ValidationState {
         if (url.isEmpty()) return ValidationState.EMPTY
         if (!url.startsWith("https://")) return ValidationState.INVALID
         val hostRegex = Regex("^https://([a-zA-Z0-9.-]+)(/.*)?$")
         return if (hostRegex.matches(url)) ValidationState.VALID else ValidationState.INVALID
     }
 
-    fun isValidUuid(uuid: String): ValidationState {
+    fun validateClientId(uuid: String): ValidationState {
         if (uuid.isEmpty()) return ValidationState.EMPTY
 
         val tokens = uuid.split("-")
@@ -93,7 +93,7 @@ class SettingsValidator {
         return if (uuid.length == 36) ValidationState.VALID else ValidationState.VALID_BUT_INCOMPLETE
     }
 
-    fun isValidClientSecret(secret: String): ValidationState {
+    fun validateClientSecret(secret: String): ValidationState {
         if (secret.isEmpty()) return ValidationState.EMPTY
 
         // define the expected sequence
@@ -112,10 +112,10 @@ class SettingsValidator {
     }
 
     fun validateSettings(settings: SettingsViewModel.Settings): Boolean {
-        val vinValid = isValidVin(settings.vin)
-        val baseUrlValid = isValidBaseUrl(settings.baseUrl)
-        val clientIdValid = isValidUuid(settings.clientId)
-        val clientSecretValid = isValidClientSecret(settings.clientSecret)
+        val vinValid = validateVin(settings.vin)
+        val baseUrlValid = validateBaseUrl(settings.baseUrl)
+        val clientIdValid = validateClientId(settings.clientId)
+        val clientSecretValid = validateClientSecret(settings.clientSecret)
 
         return vinValid == ValidationState.VALID &&
                 baseUrlValid == ValidationState.VALID &&

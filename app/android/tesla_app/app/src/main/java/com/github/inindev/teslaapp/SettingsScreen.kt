@@ -2,7 +2,6 @@ package com.github.inindev.teslaapp
 
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,12 +13,14 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -46,19 +47,38 @@ import java.util.TimeZone
 @Composable
 fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel) {
     val context = LocalContext.current
-    val settings by settingsViewModel.settingsState.collectAsState()
+    val storedSettings by settingsViewModel.settingsState.collectAsState()
     val statusText by mainViewModel.statusText.collectAsState()
+    val validator = SettingsValidator()
+
+    // local state for staged changes
+    var vin by remember { mutableStateOf(storedSettings.vin) }
+    var baseUrl by remember { mutableStateOf(storedSettings.baseUrl) }
+    var clientId by remember { mutableStateOf(storedSettings.clientId) }
+    var clientSecret by remember { mutableStateOf(storedSettings.clientSecret) }
 
     LaunchedEffect(Unit) {
         settingsViewModel.loadSettings()
     }
 
-    // update settingsValid when settings change
-    LaunchedEffect(settings) {
-        val isValid = SettingsValidator().validateSettings(settings)
-        mainViewModel.updateSettingsValid(isValid)
-        if (isValid) mainViewModel.updateStatusText("Settings saved successfully")
-        Log.d("SettingsScreen", "Settings updated, valid: $isValid")
+    // save staged changes on back navigation
+    DisposableEffect(Unit) {
+        val callback = NavController.OnDestinationChangedListener { _, _, _ ->
+            val trimmedBaseUrl = baseUrl.trimEnd('/')
+            val stagedSettings = SettingsViewModel.Settings(vin, trimmedBaseUrl, clientId, clientSecret)
+            val isValid = validator.validateSettings(stagedSettings)
+            // always save, regardless of validity
+            settingsViewModel.updateVin(vin)
+            settingsViewModel.updateBaseUrl(trimmedBaseUrl)
+            settingsViewModel.updateClientId(clientId)
+            settingsViewModel.updateClientSecret(clientSecret)
+            mainViewModel.updateStatusText(if (isValid) "Settings saved successfully" else "Settings invalid, saved anyway")
+            mainViewModel.updateSettingsValid(isValid)
+        }
+        navController.addOnDestinationChangedListener(callback)
+        onDispose {
+            navController.removeOnDestinationChangedListener(callback)
+        }
     }
 
     Scaffold(
@@ -74,8 +94,8 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
                 SettingsHeader(navController)
 
                 Text("Tesla Service Setup", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
-                VinInput(settings, settingsViewModel)
-                BaseUrlInput(settings, settingsViewModel)
+                VinInput(vin, storedSettings.vin, { vin = it }, validator)
+                BaseUrlInput(baseUrl, storedSettings.baseUrl, { baseUrl = it }, validator)
 
                 HorizontalDivider(
                     modifier = Modifier
@@ -86,8 +106,8 @@ fun SettingsScreen(navController: NavHostController, oauth2Client: OAuth2Client,
                 )
 
                 Text("Authentication Credentials", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
-                ClientIdInput(settings, settingsViewModel)
-                ClientSecretInput(settings, settingsViewModel)
+                ClientIdInput(clientId, storedSettings.clientId, { clientId = it }, validator)
+                ClientSecretInput(clientSecret, storedSettings.clientSecret, { clientSecret = it }, validator)
 
                 AuthenticateSection(context, mainViewModel, settingsViewModel)
                 TokenInfoDisplay(oauth2Client, mainViewModel)
@@ -122,21 +142,28 @@ fun SettingsHeader(navController: NavHostController) {
 }
 
 @Composable
-fun VinInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
-    val vinValidationState by settingsViewModel.vinValidationState.collectAsState()
+fun VinInput(
+    value: String,
+    storedValue: String,
+    onValueChange: (String) -> Unit,
+    validator: SettingsValidator
+) {
+    val vinValidationState = validator.validateVin(value)
+    val isModified = value != storedValue
 
     OutlinedTextField(
-        value = settings.vin,
-        onValueChange = { settingsViewModel.updateVin(it.uppercase()) },
+        value = value,
+        onValueChange = { onValueChange(it.uppercase()) },
         label = { Text("VIN") },
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
+        // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (vinValidationState) {
                 SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface
+                else -> MaterialTheme.colorScheme.onSurface // default
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -144,20 +171,29 @@ fun VinInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsVi
             imeAction = ImeAction.Next
         ),
         trailingIcon = {
-            when (vinValidationState) {
-                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "VIN incomplete",
-                    tint = ValidationWarningColor
+            if (isModified) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Revert VIN",
+                    modifier = Modifier
+                        .clickable { onValueChange(storedValue) }
+                        .size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-
-                SettingsValidator.ValidationState.INVALID -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Invalid VIN",
-                    tint = MaterialTheme.colorScheme.error
-                )
-
-                else -> {} // No icon for VALID or EMPTY
+            } else {
+                when (vinValidationState) {
+                    SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "VIN Incomplete",
+                        tint = ValidationWarningColor
+                    )
+                    SettingsValidator.ValidationState.INVALID -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Invalid VIN",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    else -> { } // no icon for valid or empty
+                }
             }
         },
         placeholder = { Text("XXXXXXXXXXXXXXXXX", color = Color.LightGray) },
@@ -171,21 +207,28 @@ fun VinInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsVi
 }
 
 @Composable
-fun BaseUrlInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
-    val baseUrlValidationState by settingsViewModel.baseUrlValidationState.collectAsState()
+fun BaseUrlInput(
+    value: String,
+    storedValue: String,
+    onValueChange: (String) -> Unit,
+    validator: SettingsValidator
+) {
+    val baseUrlValidationState = validator.validateBaseUrl(value)
+    val isModified = value != storedValue
 
     OutlinedTextField(
-        value = settings.baseUrl,
-        onValueChange = { settingsViewModel.updateBaseUrl(it) },
+        value = value,
+        onValueChange = onValueChange,
         label = { Text("Base URL") },
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
+        // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (baseUrlValidationState) {
                 SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface
+                else -> MaterialTheme.colorScheme.onSurface // default
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -193,20 +236,29 @@ fun BaseUrlInput(settings: SettingsViewModel.Settings, settingsViewModel: Settin
             imeAction = ImeAction.Next
         ),
         trailingIcon = {
-            when (baseUrlValidationState) {
-                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Base URL incomplete",
-                    tint = ValidationWarningColor
+            if (isModified) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Revert Base URL",
+                    modifier = Modifier
+                        .clickable { onValueChange(storedValue) }
+                        .size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-
-                SettingsValidator.ValidationState.INVALID -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Invalid Base URL",
-                    tint = MaterialTheme.colorScheme.error
-                )
-
-                else -> {} // No icon for VALID or EMPTY
+            } else {
+                when (baseUrlValidationState) {
+                    SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Base URL incomplete",
+                        tint = ValidationWarningColor
+                    )
+                    SettingsValidator.ValidationState.INVALID -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Invalid Base URL",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    else -> { } // no icon for valid or empty
+                }
             }
         },
         placeholder = { Text("https://hostname", color = Color.LightGray) },
@@ -214,18 +266,24 @@ fun BaseUrlInput(settings: SettingsViewModel.Settings, settingsViewModel: Settin
     )
     ValidationFeedback(
         validationState = baseUrlValidationState,
-        validButIncompleteMessage = "Base URL is partially valid but lacks full HTTPS specification. Please include scheme and host.",
-        invalidMessage = "Base URL is invalid. Must start with 'https://' and include a valid host."
+        validButIncompleteMessage = "Base URL is partially valid but lacks full https specification. Please include scheme and host.",
+        invalidMessage = "Base URL is invalid. It must begin with 'https://' and include a valid host."
     )
 }
 
 @Composable
-fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
-    val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
+fun ClientIdInput(
+    value: String,
+    storedValue: String,
+    onValueChange: (String) -> Unit,
+    validator: SettingsValidator
+) {
+    val clientIdValidationState = validator.validateClientId(value)
+    val isModified = value != storedValue
 
     OutlinedTextField(
-        value = settings.clientId,
-        onValueChange = { settingsViewModel.updateClientId(it) },
+        value = value,
+        onValueChange = onValueChange,
         label = { Text("Client ID") },
         modifier = Modifier
             .fillMaxWidth()
@@ -233,9 +291,9 @@ fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: Setti
         // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (clientIdValidationState) {
-                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // red
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface // Default
+                else -> MaterialTheme.colorScheme.onSurface // default
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -243,20 +301,29 @@ fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: Setti
             imeAction = ImeAction.Next
         ),
         trailingIcon = {
-            when (clientIdValidationState) {
-                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Client ID incomplete",
-                    tint = ValidationWarningColor
+            if (isModified) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Revert Client ID",
+                    modifier = Modifier
+                        .clickable { onValueChange(storedValue) }
+                        .size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-
-                SettingsValidator.ValidationState.INVALID -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Invalid Client ID",
-                    tint = MaterialTheme.colorScheme.error
-                )
-
-                else -> {} // No icon for VALID or EMPTY
+            } else {
+                when (clientIdValidationState) {
+                    SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Client ID incomplete",
+                        tint = ValidationWarningColor
+                    )
+                    SettingsValidator.ValidationState.INVALID -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Invalid Client ID",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    else -> { } // no icon for valid or empty
+                }
             }
         },
         placeholder = { Text("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", color = Color.LightGray) },
@@ -264,17 +331,24 @@ fun ClientIdInput(settings: SettingsViewModel.Settings, settingsViewModel: Setti
     )
     ValidationFeedback(
         validationState = clientIdValidationState,
-        validButIncompleteMessage = "Client ID is partially valid but incomplete. Please complete the UUID format.",
-        invalidMessage = "Please enter a valid UUID format for Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        validButIncompleteMessage = "Client ID is partially valid but incomplete. Please complete the uuid format.",
+        invalidMessage = "Please enter a valid uuid format for Client ID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     )
 }
 
 @Composable
-fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: SettingsViewModel) {
-    val clientSecretValidationState by settingsViewModel.clientSecretValidationState.collectAsState()
+fun ClientSecretInput(
+    value: String,
+    storedValue: String,
+    onValueChange: (String) -> Unit,
+    validator: SettingsValidator
+) {
+    val clientSecretValidationState = validator.validateClientSecret(value)
+    val isModified = value != storedValue
+
     OutlinedTextField(
-        value = settings.clientSecret,
-        onValueChange = { settingsViewModel.updateClientSecret(it) },
+        value = value,
+        onValueChange = onValueChange,
         label = { Text("Client Secret") },
         modifier = Modifier
             .fillMaxWidth()
@@ -282,9 +356,9 @@ fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: S
         // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (clientSecretValidationState) {
-                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // Red
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // red
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface // Default
+                else -> MaterialTheme.colorScheme.onSurface // default
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -292,20 +366,29 @@ fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: S
             imeAction = ImeAction.Done
         ),
         trailingIcon = {
-            when (clientSecretValidationState) {
-                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Client Secret incomplete",
-                    tint = ValidationWarningColor
+            if (isModified) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Revert Client Secret",
+                    modifier = Modifier
+                        .clickable { onValueChange(storedValue) }
+                        .size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-
-                SettingsValidator.ValidationState.INVALID -> Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Invalid Client Secret",
-                    tint = MaterialTheme.colorScheme.error
-                )
-
-                else -> {} // No icon for VALID or EMPTY
+            } else {
+                when (clientSecretValidationState) {
+                    SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Client Secret incomplete",
+                        tint = ValidationWarningColor
+                    )
+                    SettingsValidator.ValidationState.INVALID -> Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Invalid Client Secret",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    else -> { } // no icon for valid or empty
+                }
             }
         },
         placeholder = { Text("ta-secret.xxxxxxxxxxxxxxxx", color = Color.LightGray) },
@@ -314,7 +397,7 @@ fun ClientSecretInput(settings: SettingsViewModel.Settings, settingsViewModel: S
     ValidationFeedback(
         validationState = clientSecretValidationState,
         validButIncompleteMessage = "Client Secret is partially valid but incomplete. Please enter the full 26 characters.",
-        invalidMessage = "Client Secret is invalid. It must start with 'ta-secret.' and be 26 characters long."
+        invalidMessage = "Client Secret is invalid. It must begin with 'ta-secret.' and be 26 characters long."
     )
 }
 
@@ -328,17 +411,17 @@ fun AuthenticateSection(context: android.content.Context, mainViewModel: MainVie
             .padding(top = 24.dp, start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        // Message with link
+        // message with link
         Text(
             text = buildAnnotatedString {
                 append("The Client ID and Secret values can be found in the ")
                 pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
                 withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                    append("Tesla developer dashboard")
+                    append("Tesla Developer Dashboard")
                     addStringAnnotation(
                         tag = "URL",
                         annotation = "https://developer.tesla.com/en_US/dashboard",
-                        start = length - "Tesla developer dashboard".length,
+                        start = length - "Tesla Developer Dashboard".length,
                         end = length
                     )
                 }
@@ -355,7 +438,7 @@ fun AuthenticateSection(context: android.content.Context, mainViewModel: MainVie
                 },
         )
 
-        // Authenticate Button
+        // authenticate button
         val scope = rememberCoroutineScope()
         val isAuthenticating by mainViewModel.isAuthenticating.collectAsState()
         Button(
@@ -395,7 +478,7 @@ fun TokenInfoDisplay(oauth2Client: OAuth2Client, viewModel: MainViewModel) {
             Text(
                 buildAnnotatedString {
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Token Life Remaining: ")
+                        append("token life remaining: ")
                     }
                     append(if (tokenInfo != null) "${tokenInfo!!.second}%" else "N/A")
                 }
@@ -474,7 +557,7 @@ fun ValidationFeedback(
                 modifier = Modifier.padding(start = 16.dp)
             )
         }
-        else -> { } // no message for VALID or EMPTY
+        else -> { } // no message for valid or empty
     }
 }
 

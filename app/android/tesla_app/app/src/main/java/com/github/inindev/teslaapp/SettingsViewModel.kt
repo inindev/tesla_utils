@@ -49,10 +49,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 
     private fun validateAllFields(settings: Settings) {
-        _vinValidationState.value = settingsValidator.isValidVin(settings.vin)
-        _baseUrlValidationState.value = settingsValidator.isValidBaseUrl(settings.baseUrl)
-        _clientIdValidationState.value = settingsValidator.isValidUuid(settings.clientId)
-        _clientSecretValidationState.value = settingsValidator.isValidClientSecret(settings.clientSecret)
+        _vinValidationState.value = settingsValidator.validateVin(settings.vin)
+        _baseUrlValidationState.value = settingsValidator.validateBaseUrl(settings.baseUrl)
+        _clientIdValidationState.value = settingsValidator.validateClientId(settings.clientId)
+        _clientSecretValidationState.value = settingsValidator.validateClientSecret(settings.clientSecret)
     }
 
     private fun updateSetting(update: (Settings) -> Settings) {
