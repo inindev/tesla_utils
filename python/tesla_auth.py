@@ -21,9 +21,9 @@ def config_setup():
     storage.store_vin(vin)
     logger.debug(f"Stored VIN: '{vin}'")
 
-    base_url = input("Enter Base URL: ")
-    storage.store_base_url(base_url)
-    logger.debug(f"Stored Base URL: '{base_url}'")
+    proxy_url = input("Enter Tesla HTTP Proxy URL: ")
+    storage.store_proxy_url(proxy_url)
+    logger.debug(f"Stored Tesla HTTP Proxy URL: '{proxy_url}'")
 
     client_id = input("Enter Client ID: ")
     storage.store_client_id(client_id)

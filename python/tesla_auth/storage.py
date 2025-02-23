@@ -149,22 +149,20 @@ class SecureStorage:
         """Retrieve the VIN, returning an empty string if not found."""
         return self._read_data().get("vin", "")
 
-    def store_base_url(self, base_url: str):
-        """Store the base URL, removing it if blank. Strip trailing '/' if present."""
+    def store_proxy_url(self, proxy_url: str):
+        """store the proxy url, removing it if blank. strip trailing '/' if present."""
         data = self._read_data()
-        if not base_url:
-            data.pop("base_url", None)
+        if not proxy_url:
+            data.pop("proxy_url", None)
         else:
-            # strip trailing '/' if it exists
-            cleaned_base_url = base_url.rstrip('/')
-            data["base_url"] = cleaned_base_url
+            cleaned_proxy_url = proxy_url.rstrip('/')
+            data["proxy_url"] = cleaned_proxy_url
         self._write_data(data)
 
-    def retrieve_base_url(self) -> str:
-        """Retrieve the base URL, returning an empty string if not found."""
-        return self._read_data().get("base_url", "")
+    def retrieve_proxy_url(self) -> str:
+        """retrieve the proxy url, returning an empty string if not found."""
+        return self._read_data().get("proxy_url", "")
 
     def clear_secure_storage(self):
         """Clear all data from storage."""
         self._write_data({})
-
