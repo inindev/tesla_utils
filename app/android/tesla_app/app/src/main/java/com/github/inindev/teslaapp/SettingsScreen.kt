@@ -77,7 +77,7 @@ fun SettingsScreen(
 
     // local state for staged changes
     var vin by remember { mutableStateOf(storedSettings.vin) }
-    var baseUrl by remember { mutableStateOf(storedSettings.baseUrl) }
+    var proxyUrl by remember { mutableStateOf(storedSettings.proxyUrl) }
     var clientId by remember { mutableStateOf(storedSettings.clientId) }
     var clientSecret by remember { mutableStateOf(storedSettings.clientSecret) }
 
@@ -88,10 +88,10 @@ fun SettingsScreen(
     // save staged changes on back navigation
     fun saveSettings() {
         Log.d("SettingsScreen", "saveSettings() called at ${System.currentTimeMillis()}")
-        val trimmedBaseUrl = baseUrl.trimEnd('/')
-        val stagedSettings = SettingsViewModel.Settings(vin, trimmedBaseUrl, clientId, clientSecret)
+        val trimmedProxyUrl = proxyUrl.trimEnd('/')
+        val stagedSettings = SettingsViewModel.Settings(vin, trimmedProxyUrl, clientId, clientSecret)
         settingsViewModel.updateVin(vin)
-        settingsViewModel.updateBaseUrl(trimmedBaseUrl)
+        settingsViewModel.updateProxyUrl(trimmedProxyUrl)
         settingsViewModel.updateClientId(clientId)
         settingsViewModel.updateClientSecret(clientSecret)
         val isValid = validator.validateSettings(stagedSettings)
@@ -122,7 +122,7 @@ fun SettingsScreen(
 
                 Text("Tesla Service Setup", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
                 VinInput(vin, storedSettings.vin, { vin = it }, validator)
-                BaseUrlInput(baseUrl, storedSettings.baseUrl, { baseUrl = it }, validator)
+                ProxyUrlInput(proxyUrl, storedSettings.proxyUrl, { proxyUrl = it }, validator)
 
                 HorizontalDivider(
                     modifier = Modifier
@@ -230,25 +230,25 @@ fun VinInput(
 }
 
 @Composable
-fun BaseUrlInput(
+fun ProxyUrlInput(
     value: String,
     storedValue: String,
     onValueChange: (String) -> Unit,
     validator: SettingsValidator
 ) {
-    val baseUrlValidationState = validator.validateBaseUrl(value)
+    val proxyUrlValidationState = validator.validateProxyUrl(value)
     val isModified = value != storedValue
 
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text("Base URL") },
+        label = { Text("Proxy URL") },
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
-            color = when (baseUrlValidationState) {
+            color = when (proxyUrlValidationState) {
                 SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
                 else -> MaterialTheme.colorScheme.onSurface // default
@@ -262,22 +262,22 @@ fun BaseUrlInput(
             if (isModified) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
-                    contentDescription = "Revert Base URL",
+                    contentDescription = "Revert Proxy URL",
                     modifier = Modifier
                         .clickable { onValueChange(storedValue) }
                         .size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
             } else {
-                when (baseUrlValidationState) {
+                when (proxyUrlValidationState) {
                     SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = "Base URL incomplete",
+                        contentDescription = "Proxy URL incomplete",
                         tint = ValidationWarningColor
                     )
                     SettingsValidator.ValidationState.INVALID -> Icon(
                         imageVector = Icons.Default.Warning,
-                        contentDescription = "Invalid Base URL",
+                        contentDescription = "Invalid Proxy URL",
                         tint = MaterialTheme.colorScheme.error
                     )
                     else -> { } // no icon for valid or empty
@@ -285,12 +285,12 @@ fun BaseUrlInput(
             }
         },
         placeholder = { Text("https://hostname", color = Color.LightGray) },
-        isError = baseUrlValidationState == SettingsValidator.ValidationState.INVALID
+        isError = proxyUrlValidationState == SettingsValidator.ValidationState.INVALID
     )
     ValidationFeedback(
-        validationState = baseUrlValidationState,
-        validButIncompleteMessage = "Base URL is partially valid but lacks full https specification. Please include scheme and host.",
-        invalidMessage = "Base URL is invalid. It must begin with 'https://' and include a valid host."
+        validationState = proxyUrlValidationState,
+        validButIncompleteMessage = "Proxy URL is partially valid but lacks full https specification. Please include scheme and host.",
+        invalidMessage = "Proxy URL is invalid. It must begin with 'https://' and include a valid host."
     )
 }
 

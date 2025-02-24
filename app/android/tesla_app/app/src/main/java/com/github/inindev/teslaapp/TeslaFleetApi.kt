@@ -164,9 +164,9 @@ class TeslaFleetApi(
 
         // substitute {vehicleId} with the actual vehicleId
         val settings = settingsRepository.loadSettings()
-        val baseUrl = settings.baseUrl
+        val proxyUrl = settings.proxyUrl
         val vehicleId = settings.vin
-        val url = "$baseUrl${endpoint.replace("{vehicleId}", vehicleId)}"
+        val url = "$proxyUrl${endpoint.replace("{vehicleId}", vehicleId)}"
 
         // default headers
         val defaultHeaders = mapOf(

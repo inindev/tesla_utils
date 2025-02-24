@@ -4,7 +4,7 @@ class SettingsRepository(private val secureStorage: SecureStorage) {
     suspend fun loadSettings(): SettingsViewModel.Settings {
         return SettingsViewModel.Settings(
             vin = secureStorage.retrieveVin(),
-            baseUrl = secureStorage.retrieveBaseUrl(),
+            proxyUrl = secureStorage.retrieveProxyUrl(),
             clientId = secureStorage.retrieveClientId(),
             clientSecret = secureStorage.retrieveClientSecret()
         )
@@ -12,7 +12,7 @@ class SettingsRepository(private val secureStorage: SecureStorage) {
 
     fun saveSettings(settings: SettingsViewModel.Settings) {
         secureStorage.storeVin(settings.vin)
-        secureStorage.storeBaseUrl(settings.baseUrl)
+        secureStorage.storeProxyUrl(settings.proxyUrl)
         secureStorage.storeClientId(settings.clientId)
         secureStorage.storeClientSecret(settings.clientSecret)
     }

@@ -201,29 +201,29 @@ class SecureStorage(private val context: Context) {
     }
 
     /**
-     * Stores the base URL for Tesla's API.
-     * @param baseUrl The base URL to store or remove if blank.
+     * Stores the proxy URL for Tesla's API.
+     * @param proxyUrl The proxy URL to store or remove if blank.
      */
-    fun storeBaseUrl(baseUrl: String?) {
+    fun storeProxyUrl(proxyUrl: String?) {
         with(sharedPreferences.edit()) {
-            if (baseUrl.isNullOrBlank()) {
-                remove("base_url")
+            if (proxyUrl.isNullOrBlank()) {
+                remove("proxy_url")
             } else {
-                putString("base_url", baseUrl)
+                putString("proxy_url", proxyUrl)
             }
             apply()
         }
     }
 
     /**
-     * Retrieves the base URL for Tesla's API, returning an empty string if not found or on error.
-     * @return The stored base URL or an empty string.
+     * Retrieves the proxy URL for Tesla's API, returning an empty string if not found or on error.
+     * @return The stored proxy URL or an empty string.
      */
-    fun retrieveBaseUrl(): String {
+    fun retrieveProxyUrl(): String {
         return try {
-            sharedPreferences.getString("base_url", "") ?: ""
+            sharedPreferences.getString("proxy_url", "") ?: ""
         } catch (e: Exception) {
-            Log.e("SecureStorage", "Error retrieving base URL", e)
+            Log.e("SecureStorage", "Error retrieving proxy URL", e)
             ""
         }
     }

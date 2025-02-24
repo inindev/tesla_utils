@@ -14,7 +14,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     data class Settings(
         val vin: String = "",
-        val baseUrl: String = "",
+        val proxyUrl: String = "",
         val clientId: String = "",
         val clientSecret: String = ""
     )
@@ -22,8 +22,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     private val _vinValidationState = MutableStateFlow(SettingsValidator.ValidationState.EMPTY)
     val vinValidationState: StateFlow<SettingsValidator.ValidationState> = _vinValidationState
 
-    private val _baseUrlValidationState = MutableStateFlow(SettingsValidator.ValidationState.EMPTY)
-    val baseUrlValidationState: StateFlow<SettingsValidator.ValidationState> = _baseUrlValidationState
+    private val _proxyUrlValidationState = MutableStateFlow(SettingsValidator.ValidationState.EMPTY)
+    val proxyUrlValidationState: StateFlow<SettingsValidator.ValidationState> = _proxyUrlValidationState
 
     private val _clientIdValidationState = MutableStateFlow(SettingsValidator.ValidationState.EMPTY)
     val clientIdValidationState: StateFlow<SettingsValidator.ValidationState> = _clientIdValidationState.asStateFlow()
@@ -50,7 +50,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
 
     private fun validateAllFields(settings: Settings) {
         _vinValidationState.value = settingsValidator.validateVin(settings.vin)
-        _baseUrlValidationState.value = settingsValidator.validateBaseUrl(settings.baseUrl)
+        _proxyUrlValidationState.value = settingsValidator.validateProxyUrl(settings.proxyUrl)
         _clientIdValidationState.value = settingsValidator.validateClientId(settings.clientId)
         _clientSecretValidationState.value = settingsValidator.validateClientSecret(settings.clientSecret)
     }
@@ -64,7 +64,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 
     fun updateVin(newVin: String) = updateSetting { it.copy(vin = newVin) }
-    fun updateBaseUrl(newBaseUrl: String) = updateSetting { it.copy(baseUrl = newBaseUrl) }
+    fun updateProxyUrl(newProxyUrl: String) = updateSetting { it.copy(proxyUrl = newProxyUrl) }
     fun updateClientId(newClientId: String) = updateSetting { it.copy(clientId = newClientId) }
     fun updateClientSecret(newClientSecret: String) = updateSetting { it.copy(clientSecret = newClientSecret) }
 }

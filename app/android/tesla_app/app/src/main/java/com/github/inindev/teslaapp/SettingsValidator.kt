@@ -63,7 +63,7 @@ class SettingsValidator {
         return ValidationState.VALID
     }
 
-    fun validateBaseUrl(url: String): ValidationState {
+    fun validateProxyUrl(url: String): ValidationState {
         if (url.isEmpty()) return ValidationState.EMPTY
         if (!url.startsWith("https://")) return ValidationState.INVALID
         val hostRegex = Regex("^https://([a-zA-Z0-9.-]+)(/.*)?$")
@@ -113,12 +113,12 @@ class SettingsValidator {
 
     fun validateSettings(settings: SettingsViewModel.Settings): Boolean {
         val vinValid = validateVin(settings.vin)
-        val baseUrlValid = validateBaseUrl(settings.baseUrl)
+        val proxyUrlValid = validateProxyUrl(settings.proxyUrl)
         val clientIdValid = validateClientId(settings.clientId)
         val clientSecretValid = validateClientSecret(settings.clientSecret)
 
         return vinValid == ValidationState.VALID &&
-                baseUrlValid == ValidationState.VALID &&
+                proxyUrlValid == ValidationState.VALID &&
                 clientIdValid == ValidationState.VALID &&
                 clientSecretValid == ValidationState.VALID
     }
