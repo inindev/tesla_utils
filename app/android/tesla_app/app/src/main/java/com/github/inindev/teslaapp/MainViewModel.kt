@@ -39,6 +39,9 @@ class MainViewModel(
     private val _jsonContent = MutableStateFlow("")
     val jsonContent: StateFlow<String> = _jsonContent.asStateFlow()
 
+    private val _showAboutDialog = MutableStateFlow(false)
+    val showAboutDialog: StateFlow<Boolean> = _showAboutDialog.asStateFlow()
+
     // vehicle data class
     data class Vehicle(
         val id: Long,
@@ -69,6 +72,26 @@ class MainViewModel(
                 proxyApi = TeslaProxyFleetApi(proxyUrl, currentVehicle.vin, oauth2Client)
                 updateStatusText("Proxy URL updated for vehicle: ${currentVehicle.displayName}")
             }
+        }
+    }
+
+    fun showAboutDialog() {
+        viewModelScope.launch { _showAboutDialog.value = true }
+    }
+
+    fun hideAboutDialog() {
+        viewModelScope.launch { _showAboutDialog.value = false }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            secureStorage.clearSecureStorage()
+            _vehicles.value = emptyList()
+            _selectedVehicle.value = null
+            _settingsValid.value = false
+            proxyApi = null
+            updateStatusText("Logged out successfully")
+            _snackbarMessage.value = "Logged out. Please re-authenticate to continue."
         }
     }
 
