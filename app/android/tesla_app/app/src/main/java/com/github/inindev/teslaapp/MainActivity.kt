@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var settingsValidator: SettingsValidator
 
     private val mainViewModel: MainViewModel by viewModels {
-        MainViewModelFactory(settingsRepository, oauth2Client)
+        MainViewModelFactory(secureStorage, settingsRepository, oauth2Client)
     }
     private val settingsViewModel: SettingsViewModel by viewModels {
         SettingsViewModelFactory(settingsRepository)
