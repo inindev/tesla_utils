@@ -79,6 +79,8 @@ fun SettingsScreen(
     var proxyUrl by remember { mutableStateOf(storedSettings.proxyUrl) }
     var clientId by remember { mutableStateOf(storedSettings.clientId) }
     var clientSecret by remember { mutableStateOf(storedSettings.clientSecret) }
+    val clientIdValidationState = validator.validateClientId(clientId)
+    val clientSecretValidationState = validator.validateClientSecret(clientSecret)
 
     LaunchedEffect(Unit) {
         settingsViewModel.loadSettings()
@@ -135,7 +137,7 @@ fun SettingsScreen(
                 ClientIdInput(clientId, storedSettings.clientId, { clientId = it }, validator)
                 ClientSecretInput(clientSecret, storedSettings.clientSecret, { clientSecret = it }, validator)
 
-                AuthenticateSection(context, mainViewModel, settingsViewModel)
+                AuthenticateSection(context, mainViewModel, settingsViewModel, clientIdValidationState, clientSecretValidationState)
                 TokenInfoDisplay(oauth2Client, mainViewModel)
             }
         }
@@ -359,9 +361,13 @@ fun ClientSecretInput(
 }
 
 @Composable
-fun AuthenticateSection(context: android.content.Context, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel) {
-    val clientIdValidationState by settingsViewModel.clientIdValidationState.collectAsState()
-
+fun AuthenticateSection(
+    context: android.content.Context,
+    mainViewModel: MainViewModel,
+    settingsViewModel: SettingsViewModel,
+    clientIdValidationState: SettingsValidator.ValidationState,
+    clientSecretValidationState: SettingsValidator.ValidationState
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -396,17 +402,17 @@ fun AuthenticateSection(context: android.content.Context, mainViewModel: MainVie
         )
 
         // authenticate button
-        val isAuthenticating by mainViewModel.isAuthenticating.collectAsState()
         Button(
             onClick = {
-                if (clientIdValidationState == SettingsValidator.ValidationState.VALID) {
+                if (clientIdValidationState == SettingsValidator.ValidationState.VALID &&
+                    clientSecretValidationState == SettingsValidator.ValidationState.VALID
+                ) {
                     mainViewModel.initiateAuthFlow(context)
                 } else {
-                    mainViewModel.updateStatusText("Please enter a valid Client ID to authenticate.")
-                    mainViewModel.setIsAuthenticating(false)
+                    mainViewModel.updateStatusText("Please enter a valid Client ID and Client Secret to authenticate.")
                 }
             },
-            enabled = clientIdValidationState == SettingsValidator.ValidationState.VALID && !isAuthenticating,
+            enabled = clientIdValidationState == SettingsValidator.ValidationState.VALID && clientSecretValidationState == SettingsValidator.ValidationState.VALID,
             modifier = Modifier
                 .padding(top = 8.dp)
                 .align(Alignment.End)
