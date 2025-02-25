@@ -76,7 +76,6 @@ fun SettingsScreen(
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
     // local state for staged changes
-    var vin by remember { mutableStateOf(storedSettings.vin) }
     var proxyUrl by remember { mutableStateOf(storedSettings.proxyUrl) }
     var clientId by remember { mutableStateOf(storedSettings.clientId) }
     var clientSecret by remember { mutableStateOf(storedSettings.clientSecret) }
@@ -89,8 +88,9 @@ fun SettingsScreen(
     fun saveSettings() {
         Log.d("SettingsScreen", "saveSettings() called at ${System.currentTimeMillis()}")
         val trimmedProxyUrl = proxyUrl.trimEnd('/')
-        val stagedSettings = SettingsViewModel.Settings(vin, trimmedProxyUrl, clientId, clientSecret)
-        settingsViewModel.updateVin(vin)
+        mainViewModel.updateProxyUrl(trimmedProxyUrl)
+
+        val stagedSettings = SettingsViewModel.Settings(trimmedProxyUrl, clientId, clientSecret)
         settingsViewModel.updateProxyUrl(trimmedProxyUrl)
         settingsViewModel.updateClientId(clientId)
         settingsViewModel.updateClientSecret(clientSecret)
@@ -120,8 +120,7 @@ fun SettingsScreen(
             item {
                 SettingsHeader(onBackClicked = { backDispatcher?.onBackPressed() })
 
-                Text("Tesla Service Setup", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
-                VinInput(vin, storedSettings.vin, { vin = it }, validator)
+                Text("Tesla API Proxy", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
                 ProxyUrlInput(proxyUrl, storedSettings.proxyUrl, { proxyUrl = it }, validator)
 
                 HorizontalDivider(
@@ -161,71 +160,6 @@ fun SettingsHeader(onBackClicked: () -> Unit) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
         thickness = 1.dp,
         color = Color.LightGray
-    )
-}
-
-@Composable
-fun VinInput(
-    value: String,
-    storedValue: String,
-    onValueChange: (String) -> Unit,
-    validator: SettingsValidator
-) {
-    val vinValidationState = validator.validateVin(value)
-    val isModified = value != storedValue
-
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onValueChange(it.uppercase()) },
-        label = { Text("VIN") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        // set text color based on validation state
-        textStyle = LocalTextStyle.current.copy(
-            color = when (vinValidationState) {
-                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
-                SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface // default
-            }
-        ),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Ascii,
-            imeAction = ImeAction.Next
-        ),
-        trailingIcon = {
-            if (isModified) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Undo,
-                    contentDescription = "Revert VIN",
-                    modifier = Modifier
-                        .clickable { onValueChange(storedValue) }
-                        .size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                when (vinValidationState) {
-                    SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "VIN Incomplete",
-                        tint = ValidationWarningColor
-                    )
-                    SettingsValidator.ValidationState.INVALID -> Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Invalid VIN",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    else -> { } // no icon for valid or empty
-                }
-            }
-        },
-        placeholder = { Text("XXXXXXXXXXXXXXXXX", color = Color.LightGray) },
-        isError = vinValidationState == SettingsValidator.ValidationState.INVALID
-    )
-    ValidationFeedback(
-        validationState = vinValidationState,
-        validButIncompleteMessage = "VIN is partially valid but too short. Please enter all 17 characters.",
-        invalidMessage = "Not a valid VIN: Please enter a 17-character VIN with valid characters."
     )
 }
 

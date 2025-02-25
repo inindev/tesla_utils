@@ -13,14 +13,10 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     val settingsState: StateFlow<Settings> = _settingsState.asStateFlow()
 
     data class Settings(
-        val vin: String = "",
         val proxyUrl: String = "",
         val clientId: String = "",
         val clientSecret: String = ""
     )
-
-    private val _vinValidationState = MutableStateFlow(SettingsValidator.ValidationState.EMPTY)
-    val vinValidationState: StateFlow<SettingsValidator.ValidationState> = _vinValidationState
 
     private val _proxyUrlValidationState = MutableStateFlow(SettingsValidator.ValidationState.EMPTY)
     val proxyUrlValidationState: StateFlow<SettingsValidator.ValidationState> = _proxyUrlValidationState
@@ -49,7 +45,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 
     private fun validateAllFields(settings: Settings) {
-        _vinValidationState.value = settingsValidator.validateVin(settings.vin)
         _proxyUrlValidationState.value = settingsValidator.validateProxyUrl(settings.proxyUrl)
         _clientIdValidationState.value = settingsValidator.validateClientId(settings.clientId)
         _clientSecretValidationState.value = settingsValidator.validateClientSecret(settings.clientSecret)
@@ -63,7 +58,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         }
     }
 
-    fun updateVin(newVin: String) = updateSetting { it.copy(vin = newVin) }
     fun updateProxyUrl(newProxyUrl: String) = updateSetting { it.copy(proxyUrl = newProxyUrl) }
     fun updateClientId(newClientId: String) = updateSetting { it.copy(clientId = newClientId) }
     fun updateClientSecret(newClientSecret: String) = updateSetting { it.copy(clientSecret = newClientSecret) }

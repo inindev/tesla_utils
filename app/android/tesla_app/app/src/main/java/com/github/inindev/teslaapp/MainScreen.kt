@@ -40,11 +40,14 @@ import androidx.navigation.NavHostController
 import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
 import kotlinx.coroutines.launch
 
+// main app layout
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val settingsValid = viewModel.settingsValid.collectAsState(initial = false).value
     val statusText = viewModel.statusText.collectAsState().value
+    val vehicles = viewModel.vehicles.collectAsState().value
+    val selectedVehicle = viewModel.selectedVehicle.collectAsState().value
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -113,8 +116,13 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                     .padding(innerPadding)
                     .fillMaxSize()
             ) {
+                // vehicle dropdown
                 item {
-                    Spacer(modifier = Modifier.height(128.dp))
+                    VehicleDropdown(viewModel, vehicles, selectedVehicle)
+                    Spacer(modifier = Modifier.height(64.dp))
+                }
+
+                item {
                     GridButtons(viewModel)
                 }
                 item {

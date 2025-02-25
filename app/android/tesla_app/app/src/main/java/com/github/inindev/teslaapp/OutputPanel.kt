@@ -22,7 +22,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.inindev.teslaapp.ui.theme.Ivory
 
+// json output display
 @Composable
 fun OutputPanel(viewModel: MainViewModel) {
     val jsonContent = viewModel.jsonContent.collectAsState(initial = "")
@@ -47,7 +49,7 @@ fun OutputPanel(viewModel: MainViewModel) {
                         .fillMaxWidth()
                         .weight(1f)
                         .padding(start = 40.dp, top = 24.dp, end = 40.dp)
-                        .background(Color(0xFFFFFFF0))
+                        .background(Ivory)
                         .border(1.dp, Color.Black, shape = RectangleShape)
                 ) {
                     Text(

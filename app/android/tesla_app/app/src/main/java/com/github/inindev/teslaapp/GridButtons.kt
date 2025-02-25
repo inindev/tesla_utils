@@ -9,13 +9,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+// vehicle command buttons
 @Composable
 fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, verticalSpacing: Dp = 8.dp) {
+    val selectedVehicle by viewModel.selectedVehicle.collectAsState()
+    val buttonsEnabled = selectedVehicle != null // buttons enabled only if a vehicle is selected
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -32,6 +38,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // lock doors
             Button(
                 onClick = { viewModel.lockDoors() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -43,6 +50,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // climate on
             Button(
                 onClick = { viewModel.climateOn() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -54,6 +62,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // charger door close
             Button(
                 onClick = { viewModel.chargeClose() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -73,6 +82,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // unlock doors
             Button(
                 onClick = { viewModel.unlockDoors() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -84,6 +94,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // vent windows
             Button(
                 onClick = { viewModel.ventWindows() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -95,6 +106,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // wake up
             Button(
                 onClick = { viewModel.wakeUp() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -114,6 +126,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // actuate trunk
             Button(
                 onClick = { viewModel.rearTrunk() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -125,6 +138,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // honk horn
             Button(
                 onClick = { viewModel.honkHorn() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -136,6 +150,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // vehicle
             Button(
                 onClick = { viewModel.vehicle() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -155,6 +170,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // open frunk
             Button(
                 onClick = { viewModel.frontTrunk() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -166,6 +182,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // flash lights
             Button(
                 onClick = { viewModel.flashLights() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)
@@ -177,6 +194,7 @@ fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, vertical
             // vehicle
             Button(
                 onClick = { viewModel.vehicleData() },
+                enabled = buttonsEnabled,
                 modifier = Modifier
                     .weight(1f)
                     .height(64.dp)

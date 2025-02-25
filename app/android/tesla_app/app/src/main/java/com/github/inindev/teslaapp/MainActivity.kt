@@ -14,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// initialize app components
 class MainActivity : ComponentActivity() {
     private lateinit var secureStorage: SecureStorage
     private lateinit var oauth2Client: OAuth2Client

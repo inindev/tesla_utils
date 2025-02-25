@@ -14,4 +14,6 @@ val TeslaRed = Color(0xFFCC0000)
 val TeslaBlue = Color(0xFF3E6AE1)
 val TeslaPrimary = TeslaBlue
 
+val Ivory = Color(0xFFFFFFF0)
+
 val ValidationWarningColor = Color(0xFF1E90FF)
