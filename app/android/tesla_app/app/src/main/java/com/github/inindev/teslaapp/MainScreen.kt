@@ -4,20 +4,24 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
@@ -25,6 +29,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -32,19 +38,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -57,6 +68,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -67,26 +79,18 @@ import kotlinx.coroutines.launch
 fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val settingsValid = viewModel.settingsValid.collectAsState(initial = false).value
+    val context = LocalContext.current
     val statusText = viewModel.statusText.collectAsState().value
     val vehicles = viewModel.vehicles.collectAsState().value
     val selectedVehicle = viewModel.selectedVehicle.collectAsState().value
     val snackbarHostState = remember { SnackbarHostState() }
-    val snackbarMessage = viewModel.snackbarMessage.collectAsState().value // Move collectAsState here
+    val snackbarMessage = viewModel.snackbarMessage.collectAsState().value
     val showAboutDialog = viewModel.showAboutDialog.collectAsState().value
-
-    // initial status update
-    LaunchedEffect(Unit) {
-        viewModel.updateStatusText("Status: Ready")
-    }
+    val showLoginDialog by viewModel.showLoginDialog.collectAsState()
+    val settingsValid by viewModel.settingsValid.collectAsState()
 
     // show snackbar when message changes
-    LaunchedEffect(snackbarMessage) { // Use the State value directly
-        snackbarMessage?.let {
-            scope.launch { snackbarHostState.showSnackbar(it) }
-            viewModel.clearSnackbarMessage()
-        }
-    }
+    showSnackbarWhenMessageChanges(scope, snackbarHostState, snackbarMessage, viewModel)
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -159,7 +163,16 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                     },
                     topBar = {
                         TopAppBar(
-                            title = { Text("Tesla App", color = Color.White) },
+                            title = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Tesla App", color = Color.White)
+                                    VehicleDropdownInTitle(viewModel, vehicles, selectedVehicle)
+                                }
+                            },
                             navigationIcon = {
                                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                     Icon(Icons.Filled.Menu, contentDescription = "Open Menu", tint = Color.White)
@@ -180,10 +193,7 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                             .padding(innerPadding)
                             .fillMaxSize()
                     ) {
-                        item {
-                            VehicleDropdown(viewModel, vehicles, selectedVehicle)
-                            Spacer(modifier = Modifier.height(64.dp))
-                        }
+                        item { Spacer(modifier = Modifier.height(110.dp)) }
                         item { GridButtons(viewModel) }
                         item { OutputPanel(viewModel) }
                     }
@@ -198,12 +208,46 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                             .background(Color.Black)
                     ) {
                         AlertDialog(
-                            onDismissRequest = {},
+                            onDismissRequest = {  },
                             title = { Text("Settings Update Required", style = MaterialTheme.typography.headlineSmall) },
                             text = { Text("Please update your settings to continue.") },
                             confirmButton = {
                                 Button(onClick = { navController.navigate("settings") }) {
                                     Text("Update Settings")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = {  }) {
+                                    Text("Cancel")
+                                }
+                            },
+                            containerColor = Color.White,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                        )
+                    }
+                }
+
+                // overlay when not logged in
+                if (showLoginDialog) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .alpha(0.7f)
+                            .background(Color.Black)
+                    ) {
+                        AlertDialog(
+                            onDismissRequest = { viewModel.hideLoginDialog() },
+                            title = { Text("Login Required", style = MaterialTheme.typography.headlineSmall) },
+                            text = { Text("You need to log in to access vehicle controls.") },
+                            confirmButton = {
+                                Button(onClick = { viewModel.initiateAuthFlow(context) }) {
+                                    Text("Login")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { viewModel.hideLoginDialog() }) {
+                                    Text("Cancel")
                                 }
                             },
                             containerColor = Color.White,
@@ -255,4 +299,84 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
             }
         }
     )
+}
+
+/**
+ * Vehicle selection dropdown adapted for the TopAppBar title section.
+ */
+@Composable
+private fun VehicleDropdownInTitle(
+    viewModel: MainViewModel,
+    vehicles: List<MainViewModel.Vehicle>,
+    selectedVehicle: MainViewModel.Vehicle?
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .width(180.dp)
+    ) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text(
+                text = selectedVehicle?.displayName ?: "Select Vehicle",
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .width(256.dp)
+                .background(MaterialTheme.colorScheme.surface)
+        ) {
+            if (vehicles.isEmpty()) {
+                DropdownMenuItem(
+                    text = { Text("No vehicles found") },
+                    onClick = { expanded = false },
+                    enabled = false
+                )
+            } else {
+                vehicles.forEach { vehicle ->
+                    DropdownMenuItem(
+                        text = { Text("${vehicle.displayName}: ${vehicle.vin}") },
+                        onClick = {
+                            viewModel.selectVehicle(vehicle)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// show snackbar when message changes
+@Composable
+private fun showSnackbarWhenMessageChanges(
+    scope: CoroutineScope,
+    snackbarHostState: SnackbarHostState,
+    snackbarMessage: String?,
+    viewModel: MainViewModel
+) {
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let {
+            scope.launch { snackbarHostState.showSnackbar(it) }
+            viewModel.clearSnackbarMessage()
+        }
+    }
 }

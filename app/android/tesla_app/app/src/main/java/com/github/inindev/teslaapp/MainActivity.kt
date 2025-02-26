@@ -37,12 +37,22 @@ class MainActivity : ComponentActivity() {
         settingsRepository = SettingsRepository(secureStorage)
         settingsValidator = SettingsValidator()
 
-        // check settings validity on startup
+        // check settings and login state on startup
         lifecycleScope.launch {
             val settings = settingsRepository.loadSettings()
             val isValid = settingsValidator.validateSettings(settings)
+            val hasToken = oauth2Client.getAccessToken() != null
             mainViewModel.updateSettingsValid(isValid)
-            Log.d("MainActivity", "Initial settings valid: $isValid")
+            Log.d("MainActivity", "Initial settings valid: $isValid, has token: $hasToken")
+            if (isValid && !hasToken) {
+                mainViewModel.showLoginDialog()
+            } else if (hasToken) {
+                withContext(Dispatchers.IO) {
+                    mainViewModel.fetchVehicles()
+                }
+            } else {
+                mainViewModel.updateStatusText("Status: Ready")
+            }
         }
 
         setContent {
@@ -61,10 +71,11 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
+    // handle oauth callback intent
     private fun handleIntent(intent: Intent) {
         if (intent.action != Intent.ACTION_VIEW) return
 
-        // check if the intent contains the expected data from the OAuth callback
+        // check if the intent contains the expected data from the oauth callback
         val uri = intent.data
         if (uri == null) {
             mainViewModel.updateStatusText("Error: URI is null")
@@ -82,11 +93,14 @@ class MainActivity : ComponentActivity() {
             when (result) {
                 is OAuth2Client.AuthResult.Success -> {
                     mainViewModel.updateStatusText("Authentication successful")
-                    mainViewModel.setIsAuthenticating(false)
+                    mainViewModel.hideLoginDialog() // close dialog on success
+                    // fetch vehicles after successful login
+                    withContext(Dispatchers.IO) {
+                        mainViewModel.fetchVehicles()
+                    }
                 }
                 is OAuth2Client.AuthResult.Failure -> {
                     mainViewModel.updateStatusText("Authentication failed: ${result.errorMessage}")
-                    mainViewModel.setIsAuthenticating(false)
                 }
             }
         }

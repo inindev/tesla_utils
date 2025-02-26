@@ -16,13 +16,10 @@ class MainViewModel(
     private val oauth2Client: OAuth2Client
 ) : ViewModel() {
     private val directApi = TeslaDirectFleetApi(oauth2Client)
-    private var proxyApi: TeslaProxyFleetApi? = null // initialized only when a vehicle is selected
+    private var proxyApi: TeslaProxyFleetApi? = null // initialize only when a vehicle is selected
 
     private val _settingsValid = MutableStateFlow(false)
     val settingsValid: StateFlow<Boolean> = _settingsValid.asStateFlow()
-
-    private val _isAuthenticating = MutableStateFlow(false)
-    val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
 
     private val _vehicles = MutableStateFlow<List<Vehicle>>(emptyList())
     val vehicles: StateFlow<List<Vehicle>> = _vehicles.asStateFlow()
@@ -33,7 +30,7 @@ class MainViewModel(
     private val _snackbarMessage = MutableStateFlow<String?>(null)
     val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
 
-    private val _statusText = MutableStateFlow("Status: Ready")
+    private val _statusText = MutableStateFlow("Status: Initializing")
     val statusText: StateFlow<String> = _statusText.asStateFlow()
 
     private val _jsonContent = MutableStateFlow("")
@@ -41,6 +38,9 @@ class MainViewModel(
 
     private val _showAboutDialog = MutableStateFlow(false)
     val showAboutDialog: StateFlow<Boolean> = _showAboutDialog.asStateFlow()
+
+    private val _showLoginDialog = MutableStateFlow(false)
+    val showLoginDialog: StateFlow<Boolean> = _showLoginDialog.asStateFlow()
 
     // vehicle data class
     data class Vehicle(
@@ -50,7 +50,7 @@ class MainViewModel(
     )
 
     init {
-        fetchVehicles()
+        // no fetchvehicles here - handled by mainactivity
     }
 
     // update selected vehicle and create proxy api
@@ -83,15 +83,24 @@ class MainViewModel(
         viewModelScope.launch { _showAboutDialog.value = false }
     }
 
+    fun showLoginDialog() {
+        viewModelScope.launch { _showLoginDialog.value = true }
+    }
+
+    fun hideLoginDialog() {
+        viewModelScope.launch { _showLoginDialog.value = false }
+    }
+
     fun logout() {
         viewModelScope.launch {
-            secureStorage.clearSecureStorage()
+            secureStorage.storeAccessToken(null)
+            secureStorage.storeRefreshToken(null)
             _vehicles.value = emptyList()
             _selectedVehicle.value = null
             _settingsValid.value = false
-            proxyApi = null
             updateStatusText("Logged out successfully")
             _snackbarMessage.value = "Logged out. Please re-authenticate to continue."
+            showLoginDialog()
         }
     }
 
@@ -224,19 +233,15 @@ class MainViewModel(
         execApiCmd(
             preFlight = {
                 _jsonContent.value = ""
-                updateStatusText("Fetching vehicle infoEx...")
+                updateStatusText("Fetching vehicle infoex...")
             },
             operation = { proxyApi!!.vehicleData() },
             onSuccess = { data ->
                 _jsonContent.value = prettyPrint(data)
-                updateStatusText("Vehicle infoEx fetch successful")
+                updateStatusText("Vehicle infoex fetch successful")
             },
-            onFailure = { updateStatusText("Failed to fetch vehicle infoEx: $it") }
+            onFailure = { updateStatusText("Failed to fetch vehicle infoex: $it") }
         )
-    }
-
-    fun setIsAuthenticating(value: Boolean) {
-        viewModelScope.launch { _isAuthenticating.value = value }
     }
 
     fun updateSettingsValid(isValid: Boolean) {
@@ -253,15 +258,14 @@ class MainViewModel(
 
     fun initiateAuthFlow(context: Context) {
         viewModelScope.launch {
-            setIsAuthenticating(true)
             try {
+                showLoginDialog()
                 updateStatusText("Authentication process started...")
                 val authUri = oauth2Client.initiateAuthFlow()
                 val customTabsIntent = CustomTabsIntent.Builder().build()
                 customTabsIntent.launchUrl(context, authUri)
             } catch (e: Exception) {
                 updateStatusText("Authentication failed: ${e.message}")
-                setIsAuthenticating(false)
             }
         }
     }
@@ -284,7 +288,7 @@ class MainViewModel(
                 if (requiresOnlineVehicle) {
                     val onlineStatus = proxyApi!!.waitForVehicleOnline()
                     if (onlineStatus is HttpResult.Failure) {
-                        onFailure("Failed to ensure vehicle is online: HTTP ${onlineStatus.statusCode}")
+                        onFailure("Failed to ensure vehicle is online: http ${onlineStatus.statusCode}")
                         return@launch
                     }
                 }
@@ -301,18 +305,18 @@ class MainViewModel(
                             }
                             404 -> updateStatusText("Vehicle not found. Check selected vehicle.")
                             408 -> updateStatusText("Vehicle offline. Try waking it up.")
-                            else -> onFailure("HTTP ${result.statusCode}")
+                            else -> onFailure("http ${result.statusCode}")
                         }
                     }
                 }
             } catch (e: Exception) {
-                onFailure("Unexpected error: ${e.message ?: "Error occurred"}")
+                onFailure("unexpected error: ${e.message ?: "error occurred"}")
             }
         }
     }
 
     // fetch vehicles and select the last used one if available
-    private fun fetchVehicles() {
+    fun fetchVehicles() {
         viewModelScope.launch {
             updateStatusText("Fetching vehicle list...")
             try {
@@ -340,11 +344,11 @@ class MainViewModel(
                         }
                     }
                     is HttpResult.Failure -> {
-                        // [Failure handling remains unchanged]
+                        updateStatusText("Failed to fetch vehicles: http ${result.statusCode}")
                     }
                 }
             } catch (e: Exception) {
-                updateStatusText("unexpected error fetching vehicles: ${e.message ?: "error occurred"}")
+                updateStatusText("Unexpected error fetching vehicles: ${e.message ?: "error occurred"}")
             }
         }
     }

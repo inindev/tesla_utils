@@ -35,15 +35,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -70,45 +70,18 @@ fun SettingsScreen(
     settingsViewModel: SettingsViewModel
 ) {
     val context = LocalContext.current
-    val storedSettings by settingsViewModel.settingsState.collectAsState()
+    val settings by settingsViewModel.settingsState.collectAsState()
     val statusText by mainViewModel.statusText.collectAsState()
     val validator = SettingsValidator()
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
-    // local state for staged changes
-    var proxyUrl by remember { mutableStateOf(storedSettings.proxyUrl) }
-    var clientId by remember { mutableStateOf(storedSettings.clientId) }
-    var clientSecret by remember { mutableStateOf(storedSettings.clientSecret) }
-    val clientIdValidationState = validator.validateClientId(clientId)
-    val clientSecretValidationState = validator.validateClientSecret(clientSecret)
+    // backup of initial settings for undo
+    val backupSettings = remember { mutableStateOf(settings) }
 
     LaunchedEffect(Unit) {
         settingsViewModel.loadSettings()
+        backupSettings.value = settingsViewModel.settingsState.value // Capture initial state
     }
-
-    // save staged changes on back navigation
-    fun saveSettings() {
-        Log.d("SettingsScreen", "saveSettings() called at ${System.currentTimeMillis()}")
-        val trimmedProxyUrl = proxyUrl.trimEnd('/')
-        mainViewModel.updateProxyUrl(trimmedProxyUrl)
-
-        val stagedSettings = SettingsViewModel.Settings(trimmedProxyUrl, clientId, clientSecret)
-        settingsViewModel.updateProxyUrl(trimmedProxyUrl)
-        settingsViewModel.updateClientId(clientId)
-        settingsViewModel.updateClientSecret(clientSecret)
-        val isValid = validator.validateSettings(stagedSettings)
-        val message = if (isValid) "Settings saved successfully" else "Settings invalid, saved anyway"
-        mainViewModel.updateStatusText(message)
-        mainViewModel.updateSettingsValid(isValid)
-    }
-
-    BackHandler(enabled = true, onBack = {
-        saveSettings()
-        val success = navController.popBackStack()
-        if (!success) {
-            Log.w("SettingsScreen", "Navigation back failed; back stack might be empty")
-        }
-    })
 
     Scaffold(
         bottomBar = { StatusBar(statusText = statusText) }
@@ -123,7 +96,16 @@ fun SettingsScreen(
                 SettingsHeader(onBackClicked = { backDispatcher?.onBackPressed() })
 
                 Text("Tesla API Proxy", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
-                ProxyUrlInput(proxyUrl, storedSettings.proxyUrl, { proxyUrl = it }, validator)
+                ProxyUrlInput(
+                    value = settings.proxyUrl,
+                    backupValue = backupSettings.value.proxyUrl,
+                    onValueChange = { newValue ->
+                        val trimmedValue = newValue.trimEnd('/')
+                        settingsViewModel.updateProxyUrl(trimmedValue)
+                        mainViewModel.updateProxyUrl(trimmedValue)
+                    },
+                    validator = validator
+                )
 
                 HorizontalDivider(
                     modifier = Modifier
@@ -134,10 +116,20 @@ fun SettingsScreen(
                 )
 
                 Text("Authentication Credentials", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 8.dp))
-                ClientIdInput(clientId, storedSettings.clientId, { clientId = it }, validator)
-                ClientSecretInput(clientSecret, storedSettings.clientSecret, { clientSecret = it }, validator)
+                ClientIdInput(
+                    value = settings.clientId,
+                    backupValue = backupSettings.value.clientId,
+                    onValueChange = { settingsViewModel.updateClientId(it) },
+                    validator = validator
+                )
+                ClientSecretInput(
+                    value = settings.clientSecret,
+                    backupValue = backupSettings.value.clientSecret,
+                    onValueChange = { settingsViewModel.updateClientSecret(it) },
+                    validator = validator
+                )
 
-                AuthenticateSection(context, mainViewModel, settingsViewModel, clientIdValidationState, clientSecretValidationState)
+                AuthenticateSection(context, mainViewModel, validator, settings)
                 TokenInfoDisplay(oauth2Client, mainViewModel)
             }
         }
@@ -168,12 +160,12 @@ fun SettingsHeader(onBackClicked: () -> Unit) {
 @Composable
 fun ProxyUrlInput(
     value: String,
-    storedValue: String,
+    backupValue: String,
     onValueChange: (String) -> Unit,
     validator: SettingsValidator
 ) {
     val proxyUrlValidationState = validator.validateProxyUrl(value)
-    val isModified = value != storedValue
+    val isModified = value != backupValue
 
     OutlinedTextField(
         value = value,
@@ -182,12 +174,11 @@ fun ProxyUrlInput(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (proxyUrlValidationState) {
                 SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface // default
+                else -> MaterialTheme.colorScheme.onSurface
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -200,7 +191,7 @@ fun ProxyUrlInput(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert Proxy URL",
                     modifier = Modifier
-                        .clickable { onValueChange(storedValue) }
+                        .clickable { onValueChange(backupValue) }
                         .size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -216,7 +207,7 @@ fun ProxyUrlInput(
                         contentDescription = "Invalid Proxy URL",
                         tint = MaterialTheme.colorScheme.error
                     )
-                    else -> { } // no icon for valid or empty
+                    else -> { }
                 }
             }
         },
@@ -233,12 +224,12 @@ fun ProxyUrlInput(
 @Composable
 fun ClientIdInput(
     value: String,
-    storedValue: String,
+    backupValue: String,
     onValueChange: (String) -> Unit,
     validator: SettingsValidator
 ) {
     val clientIdValidationState = validator.validateClientId(value)
-    val isModified = value != storedValue
+    val isModified = value != backupValue
 
     OutlinedTextField(
         value = value,
@@ -247,12 +238,11 @@ fun ClientIdInput(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (clientIdValidationState) {
-                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // red
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface // default
+                else -> MaterialTheme.colorScheme.onSurface
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -265,7 +255,7 @@ fun ClientIdInput(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert Client ID",
                     modifier = Modifier
-                        .clickable { onValueChange(storedValue) }
+                        .clickable { onValueChange(backupValue) }
                         .size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -281,7 +271,7 @@ fun ClientIdInput(
                         contentDescription = "Invalid Client ID",
                         tint = MaterialTheme.colorScheme.error
                     )
-                    else -> { } // no icon for valid or empty
+                    else -> { }
                 }
             }
         },
@@ -298,12 +288,12 @@ fun ClientIdInput(
 @Composable
 fun ClientSecretInput(
     value: String,
-    storedValue: String,
+    backupValue: String,
     onValueChange: (String) -> Unit,
     validator: SettingsValidator
 ) {
     val clientSecretValidationState = validator.validateClientSecret(value)
-    val isModified = value != storedValue
+    val isModified = value != backupValue
 
     OutlinedTextField(
         value = value,
@@ -312,12 +302,11 @@ fun ClientSecretInput(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        // set text color based on validation state
         textStyle = LocalTextStyle.current.copy(
             color = when (clientSecretValidationState) {
-                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error // red
+                SettingsValidator.ValidationState.INVALID -> MaterialTheme.colorScheme.error
                 SettingsValidator.ValidationState.VALID_BUT_INCOMPLETE -> ValidationWarningColor
-                else -> MaterialTheme.colorScheme.onSurface // default
+                else -> MaterialTheme.colorScheme.onSurface
             }
         ),
         keyboardOptions = KeyboardOptions(
@@ -330,7 +319,7 @@ fun ClientSecretInput(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
                     contentDescription = "Revert Client Secret",
                     modifier = Modifier
-                        .clickable { onValueChange(storedValue) }
+                        .clickable { onValueChange(backupValue) }
                         .size(24.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -346,7 +335,7 @@ fun ClientSecretInput(
                         contentDescription = "Invalid Client Secret",
                         tint = MaterialTheme.colorScheme.error
                     )
-                    else -> { } // no icon for valid or empty
+                    else -> { }
                 }
             }
         },
@@ -364,9 +353,8 @@ fun ClientSecretInput(
 fun AuthenticateSection(
     context: android.content.Context,
     mainViewModel: MainViewModel,
-    settingsViewModel: SettingsViewModel,
-    clientIdValidationState: SettingsValidator.ValidationState,
-    clientSecretValidationState: SettingsValidator.ValidationState
+    validator: SettingsValidator,
+    settings: SettingsViewModel.Settings
 ) {
     Column(
         modifier = Modifier
@@ -374,7 +362,6 @@ fun AuthenticateSection(
             .padding(top = 24.dp, start = 16.dp, end = 16.dp),
         horizontalAlignment = Alignment.Start
     ) {
-        // message with link
         Text(
             text = buildAnnotatedString {
                 append("The Client ID and Secret values can be found in the ")
@@ -398,21 +385,18 @@ fun AuthenticateSection(
                         Uri.parse("https://developer.tesla.com/en_US/dashboard")
                     )
                     context.startActivity(intent)
-                },
+                }
         )
 
-        // authenticate button
         Button(
             onClick = {
-                if (clientIdValidationState == SettingsValidator.ValidationState.VALID &&
-                    clientSecretValidationState == SettingsValidator.ValidationState.VALID
-                ) {
+                if (validator.validateSettings(settings)) {
                     mainViewModel.initiateAuthFlow(context)
                 } else {
                     mainViewModel.updateStatusText("Please enter a valid Client ID and Client Secret to authenticate.")
                 }
             },
-            enabled = clientIdValidationState == SettingsValidator.ValidationState.VALID && clientSecretValidationState == SettingsValidator.ValidationState.VALID,
+            enabled = validator.validateSettings(settings),
             modifier = Modifier
                 .padding(top = 8.dp)
                 .align(Alignment.End)
@@ -427,8 +411,8 @@ fun AuthenticateSection(
 
 @Composable
 fun TokenInfoDisplay(oauth2Client: OAuth2Client, viewModel: MainViewModel) {
-    var tokenInfo by remember { mutableStateOf(oauth2Client.getJwtExpInfo()) }
     val scope = rememberCoroutineScope()
+    var tokenInfo by remember { mutableStateOf(oauth2Client.getJwtExpInfo()) }
 
     Column(
         modifier = Modifier
@@ -440,7 +424,7 @@ fun TokenInfoDisplay(oauth2Client: OAuth2Client, viewModel: MainViewModel) {
             Text(
                 buildAnnotatedString {
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("token life remaining: ")
+                        append("Token Life Remaining: ")
                     }
                     append(if (tokenInfo != null) "${tokenInfo!!.second}%" else "N/A")
                 }
@@ -519,7 +503,7 @@ fun ValidationFeedback(
                 modifier = Modifier.padding(start = 16.dp)
             )
         }
-        else -> { } // no message for valid or empty
+        else -> { }
     }
 }
 
