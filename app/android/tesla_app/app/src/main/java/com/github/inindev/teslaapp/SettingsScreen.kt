@@ -2,8 +2,6 @@ package com.github.inindev.teslaapp
 
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -41,7 +39,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
@@ -64,7 +61,6 @@ import java.util.TimeZone
 
 @Composable
 fun SettingsScreen(
-    navController: NavHostController,
     oauth2Client: OAuth2Client,
     mainViewModel: MainViewModel,
     settingsViewModel: SettingsViewModel

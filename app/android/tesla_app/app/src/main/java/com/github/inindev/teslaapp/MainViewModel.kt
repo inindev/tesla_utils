@@ -49,10 +49,6 @@ class MainViewModel(
         val displayName: String
     )
 
-    init {
-        // no fetchvehicles here - handled by mainactivity
-    }
-
     // update selected vehicle and create proxy api
     fun selectVehicle(vehicle: Vehicle) {
         viewModelScope.launch {

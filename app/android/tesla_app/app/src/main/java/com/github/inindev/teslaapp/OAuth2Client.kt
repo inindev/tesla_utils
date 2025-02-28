@@ -354,7 +354,7 @@ class OAuth2Client(private val secureStorage: SecureStorage) {
      * Represents possible results of authentication operations.
      */
     sealed class AuthResult {
-        object Success : AuthResult()
+        data object Success : AuthResult()
         data class Failure(val errorMessage: String) : AuthResult()
     }
 }

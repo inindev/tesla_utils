@@ -90,7 +90,7 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val settingsValid by viewModel.settingsValid.collectAsState()
 
     // show snackbar when message changes
-    showSnackbarWhenMessageChanges(scope, snackbarHostState, snackbarMessage, viewModel)
+    ShowSnackbarWhenMessageChanges(scope, snackbarHostState, snackbarMessage, viewModel)
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -170,7 +170,7 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Tesla App", color = Color.White)
-                                    VehicleDropdownInTitle(viewModel, vehicles, selectedVehicle)
+                                    VehicleDropdown(viewModel, vehicles, selectedVehicle)
                                 }
                             },
                             navigationIcon = {
@@ -259,7 +259,6 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
 
                 // about dialog
                 if (showAboutDialog) {
-                    val context = LocalContext.current
                     AlertDialog(
                         onDismissRequest = { viewModel.hideAboutDialog() },
                         title = {
@@ -305,7 +304,7 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
  * Vehicle selection dropdown adapted for the TopAppBar title section.
  */
 @Composable
-private fun VehicleDropdownInTitle(
+private fun VehicleDropdown(
     viewModel: MainViewModel,
     vehicles: List<MainViewModel.Vehicle>,
     selectedVehicle: MainViewModel.Vehicle?
@@ -367,7 +366,7 @@ private fun VehicleDropdownInTitle(
 
 // show snackbar when message changes
 @Composable
-private fun showSnackbarWhenMessageChanges(
+private fun ShowSnackbarWhenMessageChanges(
     scope: CoroutineScope,
     snackbarHostState: SnackbarHostState,
     snackbarMessage: String?,

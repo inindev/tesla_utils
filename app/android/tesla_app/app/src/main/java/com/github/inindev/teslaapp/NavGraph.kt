@@ -7,14 +7,17 @@ import androidx.navigation.compose.composable
 
 @Composable
 fun NavGraph(
-    navController: NavHostController, oauth2Client: OAuth2Client, mainViewModel: MainViewModel, settingsViewModel: SettingsViewModel
+    navController: NavHostController,
+    oauth2Client: OAuth2Client,
+    mainViewModel: MainViewModel,
+    settingsViewModel: SettingsViewModel
 ) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             MainScreen(navController, mainViewModel)
         }
         composable("settings") {
-            SettingsScreen(navController, oauth2Client, mainViewModel, settingsViewModel)
+            SettingsScreen(oauth2Client, mainViewModel, settingsViewModel)
         }
     }
 }

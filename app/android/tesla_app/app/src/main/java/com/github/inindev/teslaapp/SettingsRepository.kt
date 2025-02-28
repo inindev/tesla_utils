@@ -1,7 +1,7 @@
 package com.github.inindev.teslaapp
 
 class SettingsRepository(private val secureStorage: SecureStorage) {
-    suspend fun loadSettings(): SettingsViewModel.Settings {
+    fun loadSettings(): SettingsViewModel.Settings {
         return SettingsViewModel.Settings(
             proxyUrl = secureStorage.retrieveProxyUrl(),
             clientId = secureStorage.retrieveClientId(),

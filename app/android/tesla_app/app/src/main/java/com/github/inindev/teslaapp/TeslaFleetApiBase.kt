@@ -8,7 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-abstract class TeslaFleetApiBase(protected val oauth2Client: OAuth2Client) {
+abstract class TeslaFleetApiBase(private val oauth2Client: OAuth2Client) {
     private val tag = "TeslaFleetApi"
     private val client = OkHttpClient()
 
