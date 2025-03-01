@@ -16,10 +16,10 @@ import kotlinx.coroutines.withContext
 
 // initialize app components
 class MainActivity : ComponentActivity() {
-    private var secureStorage = SecureStorage(this)
-    private var oauth2Client = OAuth2Client(secureStorage)
-    private var settingsRepository = SettingsRepository(secureStorage)
-    private var settingsValidator = SettingsValidator()
+    private lateinit var secureStorage: SecureStorage
+    private lateinit var oauth2Client: OAuth2Client
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var settingsValidator: SettingsValidator
 
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModelFactory(secureStorage, settingsRepository, oauth2Client)
@@ -32,11 +32,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // initialize properties here, after context is available
+        secureStorage = SecureStorage(this)
+        oauth2Client = OAuth2Client(secureStorage)
+        settingsRepository = SettingsRepository(secureStorage)
+        settingsValidator = SettingsValidator()
+
         // check settings and login state on startup
         lifecycleScope.launch {
             val settings = settingsRepository.loadSettings()
             val isValid = settingsValidator.validateSettings(settings)
-            val hasToken = oauth2Client.getAccessToken() != null
+            val hasToken = withContext(Dispatchers.IO) { oauth2Client.getAccessToken() != null }
             mainViewModel.updateSettingsValid(isValid)
             Log.d("MainActivity", "Initial settings valid: $isValid, has token: $hasToken")
 

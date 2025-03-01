@@ -13,195 +13,98 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+// reusable command button composable
+@Composable
+private fun CommandButton(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .height(64.dp)
+            .padding(horizontal = 8.dp)
+            .we
+    ) {
+        Text(text)
+    }
+}
 
 // vehicle command buttons
 @Composable
-fun GridButtons(viewModel: MainViewModel, horizontalSpacing: Dp = 8.dp, verticalSpacing: Dp = 8.dp) {
+fun GridButtons(viewModel: MainViewModel) {
     val selectedVehicle by viewModel.selectedVehicle.collectAsState()
     val buttonsEnabled = selectedVehicle != null // buttons enabled only if a vehicle is selected
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = horizontalSpacing),
+            .padding(horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // first row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = verticalSpacing),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // lock doors
-            Button(
-                onClick = { viewModel.lockDoors() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Lock")
-            }
-
+            CommandButton("Lock", { viewModel.lockDoors() }, buttonsEnabled, Modifier.weight(1f))
             // climate on
-            Button(
-                onClick = { viewModel.climateOn() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Climate")
-            }
-
+            CommandButton("Climate", { viewModel.climateOn() }, buttonsEnabled, Modifier.weight(1f))
             // charger door close
-            Button(
-                onClick = { viewModel.chargeClose() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("CP Close")
-            }
+            CommandButton("CP Close", { viewModel.chargeClose() }, buttonsEnabled, Modifier.weight(1f))
         }
 
         // second row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = verticalSpacing),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // unlock doors
-            Button(
-                onClick = { viewModel.unlockDoors() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Unlock")
-            }
-
+            CommandButton("Unlock", { viewModel.unlockDoors() }, buttonsEnabled, Modifier.weight(1f))
             // vent windows
-            Button(
-                onClick = { viewModel.ventWindows() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Windows")
-            }
-
+            CommandButton("Windows", { viewModel.ventWindows() }, buttonsEnabled, Modifier.weight(1f))
             // wake up
-            Button(
-                onClick = { viewModel.wakeUp() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Wake Up")
-            }
+            CommandButton("Wake Up", { viewModel.wakeUp() }, buttonsEnabled, Modifier.weight(1f))
         }
 
         // third row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = verticalSpacing),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // actuate trunk
-            Button(
-                onClick = { viewModel.rearTrunk() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Trunk")
-            }
-
+            CommandButton("Trunk", { viewModel.rearTrunk() }, buttonsEnabled, Modifier.weight(1f))
             // honk horn
-            Button(
-                onClick = { viewModel.honkHorn() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Honk")
-            }
-
+            CommandButton("Honk", { viewModel.honkHorn() }, buttonsEnabled, Modifier.weight(1f))
             // vehicle
-            Button(
-                onClick = { viewModel.vehicle() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Info")
-            }
+            CommandButton("Info", { viewModel.vehicle() }, buttonsEnabled, Modifier.weight(1f))
         }
 
         // fourth row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = verticalSpacing),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // open frunk
-            Button(
-                onClick = { viewModel.frontTrunk() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Frunk")
-            }
-
+            CommandButton("Frunk", { viewModel.frontTrunk() }, buttonsEnabled, Modifier.weight(1f))
             // flash lights
-            Button(
-                onClick = { viewModel.flashLights() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("Flash")
-            }
-
+            CommandButton("Flash", { viewModel.flashLights() }, buttonsEnabled, Modifier.weight(1f))
             // vehicle
-            Button(
-                onClick = { viewModel.vehicleData() },
-                enabled = buttonsEnabled,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(64.dp)
-                    .padding(horizontal = horizontalSpacing)
-            ) {
-                Text("InfoEx")
-            }
+            CommandButton("InfoEx", { viewModel.vehicleData() }, buttonsEnabled, Modifier.weight(1f))
         }
     }
 }
