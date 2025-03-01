@@ -40,20 +40,25 @@ class MainActivity : ComponentActivity() {
 
         // check settings and login state on startup
         lifecycleScope.launch {
-            val settings = settingsRepository.loadSettings()
-            val isValid = settingsValidator.validateSettings(settings)
-            val hasToken = withContext(Dispatchers.IO) { oauth2Client.getAccessToken() != null }
-            mainViewModel.updateSettingsValid(isValid)
-            Log.d("MainActivity", "Initial settings valid: $isValid, has token: $hasToken")
+            try {
+                val settings = settingsRepository.loadSettings()
+                val isValid = settingsValidator.validateSettings(settings)
+                val hasToken = withContext(Dispatchers.IO) { oauth2Client.getAccessToken() != null }
+                mainViewModel.updateSettingsValid(isValid)
+                Log.d("MainActivity", "Initial settings valid: $isValid, has token: $hasToken")
 
-            if (isValid && !hasToken) {
-                mainViewModel.showLoginDialog()
-            } else if (hasToken) {
-                withContext(Dispatchers.IO) {
-                    mainViewModel.fetchVehicles()
+                if (isValid && !hasToken) {
+                    mainViewModel.showLoginDialog()
+                } else if (hasToken) {
+                    withContext(Dispatchers.IO) {
+                        mainViewModel.fetchVehicles()
+                    }
+                } else {
+                    mainViewModel.updateStatusText("Status: Ready")
                 }
-            } else {
-                mainViewModel.updateStatusText("Status: Ready")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Startup error: ${e.message}", e)
+                mainViewModel.updateStatusText("Error initializing: ${e.message}")
             }
         }
 
@@ -86,7 +91,7 @@ class MainActivity : ComponentActivity() {
 
         // exchanging the code for tokens involves network operations
         // dispatch to a worker thread for the network operation
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) {
                 oauth2Client.exchangeCodeForTokens(uri)
             }

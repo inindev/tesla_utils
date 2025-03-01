@@ -15,6 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+// constants for grid layout
+private val BUTTON_SPACING = 8.dp
+private val BUTTON_HEIGHT = 64.dp
+
 // reusable command button composable
 @Composable
 private fun CommandButton(
@@ -27,9 +31,8 @@ private fun CommandButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier
-            .height(64.dp)
-            .padding(horizontal = 8.dp)
-            .we
+            .height(BUTTON_HEIGHT)
+            .padding(horizontal = BUTTON_SPACING)
     ) {
         Text(text)
     }
@@ -44,14 +47,14 @@ fun GridButtons(viewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = BUTTON_SPACING),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // first row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = BUTTON_SPACING),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // lock doors
@@ -66,7 +69,7 @@ fun GridButtons(viewModel: MainViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = BUTTON_SPACING),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // unlock doors
@@ -81,7 +84,7 @@ fun GridButtons(viewModel: MainViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = BUTTON_SPACING),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // actuate trunk
@@ -96,7 +99,7 @@ fun GridButtons(viewModel: MainViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = BUTTON_SPACING),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             // open frunk

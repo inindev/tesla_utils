@@ -1,5 +1,6 @@
 package com.github.inindev.teslaapp
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -51,6 +52,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,8 +73,122 @@ import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+// defines possible overlay states for the mainscreen ui
+sealed class OverlayState {
+    object None : OverlayState()
+    object LoginDialog : OverlayState()
+    object AboutDialog : OverlayState()
+    object SettingsInvalid : OverlayState()
+}
+
 /**
- * Displays the main app layout with a navigation drawer and vehicle controls.
+ * Displays the appropriate overlay based on the current state
+ */
+@Composable
+private fun OverlayContent(
+    state: OverlayState,
+    viewModel: MainViewModel,
+    navController: NavHostController,
+    context: Context
+) {
+    when (state) {
+        OverlayState.SettingsInvalid -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(0.7f)
+                    .background(Color.Black)
+            ) {
+                AlertDialog(
+                    onDismissRequest = { /* no dismiss action */ },
+                    title = { Text("Settings Update Required", style = MaterialTheme.typography.headlineSmall) },
+                    text = { Text("Please update your settings to continue.") },
+                    confirmButton = {
+                        Button(onClick = { navController.navigate("settings") }) {
+                            Text("Update Settings")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { /* no action */ }) {
+                            Text("Cancel")
+                        }
+                    },
+                    containerColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                )
+            }
+        }
+        OverlayState.LoginDialog -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(0.7f)
+                    .background(Color.Black)
+            ) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.hideLoginDialog() },
+                    title = { Text("Login Required", style = MaterialTheme.typography.headlineSmall) },
+                    text = { Text("You need to log in to access vehicle controls.") },
+                    confirmButton = {
+                        Button(onClick = { viewModel.initiateAuthFlow(context) }) {
+                            Text("Login")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.hideLoginDialog() }) {
+                            Text("Cancel")
+                        }
+                    },
+                    containerColor = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                )
+            }
+        }
+        OverlayState.AboutDialog -> {
+            AlertDialog(
+                onDismissRequest = { viewModel.hideAboutDialog() },
+                title = {
+                    Column {
+                        Text("About Tesla App", style = MaterialTheme.typography.headlineSmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Version: 0.7", style = MaterialTheme.typography.bodyMedium)
+                        Text("Copyright (c) 2025, John Clark <inindev@gmail.com>", style = MaterialTheme.typography.bodyMedium)
+                    }
+                },
+                text = {
+                    Column {
+                        Text("A third-party Tesla vehicle control app using the Tesla Fleet API.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            buildAnnotatedString {
+                                append("Visit ")
+                                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
+                                    append("Tesla Developer")
+                                }
+                                append(" for more information.")
+                            },
+                            modifier = Modifier.clickable {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://developer.tesla.com"))
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = { viewModel.hideAboutDialog() }) { Text("Close") }
+                },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = Color.White
+            )
+        }
+        OverlayState.None -> {}
+    }
+}
+
+/**
+ * Displays the main app layout with a navigation drawer and vehicle controls
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,9 +201,21 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val selectedVehicle = viewModel.selectedVehicle.collectAsState().value
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarMessage = viewModel.snackbarMessage.collectAsState().value
-    val showAboutDialog = viewModel.showAboutDialog.collectAsState().value
-    val showLoginDialog by viewModel.showLoginDialog.collectAsState()
     val settingsValid by viewModel.settingsValid.collectAsState()
+    val showLoginDialog by viewModel.showLoginDialog.collectAsState()
+    val showAboutDialog by viewModel.showAboutDialog.collectAsState()
+
+    // compute the current overlay state based on conditions
+    val overlayState by remember {
+        derivedStateOf {
+            when {
+                !settingsValid -> OverlayState.SettingsInvalid
+                showLoginDialog -> OverlayState.LoginDialog
+                showAboutDialog -> OverlayState.AboutDialog
+                else -> OverlayState.None
+            }
+        }
+    }
 
     // show snackbar when message changes
     ShowSnackbarWhenMessageChanges(scope, snackbarHostState, snackbarMessage, viewModel)
@@ -144,164 +272,65 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                     icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout") }
                 )
             }
-        },
-        content = {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Scaffold(
-                    snackbarHost = {
-                        SnackbarHost(snackbarHostState) { data ->
-                            Snackbar(
-                                snackbarData = data,
-                                containerColor = TeslaPrimary,
-                                contentColor = Color.White,
-                                shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier
-                                    .padding(vertical = 8.dp)
-                                    .heightIn(min = 64.dp)
-                            )
-                        }
-                    },
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Tesla App", color = Color.White)
-                                    VehicleDropdown(viewModel, vehicles, selectedVehicle)
-                                }
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Filled.Menu, contentDescription = "Open Menu", tint = Color.White)
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = TeslaPrimary,
-                                titleContentColor = Color.White,
-                                navigationIconContentColor = Color.White
-                            )
-                        )
-                    },
-                    bottomBar = { StatusBar(statusText = statusText) },
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    LazyColumn(
-                        modifier = Modifier
-                            .padding(innerPadding)
-                            .fillMaxSize()
-                    ) {
-                        item { Spacer(modifier = Modifier.height(110.dp)) }
-                        item { GridButtons(viewModel) }
-                        item { OutputPanel(viewModel) }
-                    }
-                }
-
-                // overlay when settings are invalid
-                if (!settingsValid) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .alpha(0.7f)
-                            .background(Color.Black)
-                    ) {
-                        AlertDialog(
-                            onDismissRequest = {  },
-                            title = { Text("Settings Update Required", style = MaterialTheme.typography.headlineSmall) },
-                            text = { Text("Please update your settings to continue.") },
-                            confirmButton = {
-                                Button(onClick = { navController.navigate("settings") }) {
-                                    Text("Update Settings")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = {  }) {
-                                    Text("Cancel")
-                                }
-                            },
-                            containerColor = Color.White,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                        )
-                    }
-                }
-
-                // overlay when not logged in
-                if (showLoginDialog) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .alpha(0.7f)
-                            .background(Color.Black)
-                    ) {
-                        AlertDialog(
-                            onDismissRequest = { viewModel.hideLoginDialog() },
-                            title = { Text("Login Required", style = MaterialTheme.typography.headlineSmall) },
-                            text = { Text("You need to log in to access vehicle controls.") },
-                            confirmButton = {
-                                Button(onClick = { viewModel.initiateAuthFlow(context) }) {
-                                    Text("Login")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { viewModel.hideLoginDialog() }) {
-                                    Text("Cancel")
-                                }
-                            },
-                            containerColor = Color.White,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                        )
-                    }
-                }
-
-                // about dialog
-                if (showAboutDialog) {
-                    AlertDialog(
-                        onDismissRequest = { viewModel.hideAboutDialog() },
-                        title = {
-                            Column {
-                                Text("About Tesla App", style = MaterialTheme.typography.headlineSmall)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Version: 0.7", style = MaterialTheme.typography.bodyMedium)
-                                Text("Copyright (c) 2025, John Clark <inindev@gmail.com>", style = MaterialTheme.typography.bodyMedium)
-                            }
-                        },
-                        text = {
-                            Column {
-                                Text("A third-party Tesla vehicle control app using the Tesla Fleet API.")
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    buildAnnotatedString {
-                                        append("Visit ")
-                                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
-                                            append("Tesla Developer")
-                                        }
-                                        append(" for more information.")
-                                    },
-                                    modifier = Modifier.clickable {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://developer.tesla.com"))
-                                        context.startActivity(intent)
-                                    }
-                                )
-                            }
-                        },
-                        confirmButton = {
-                            Button(onClick = { viewModel.hideAboutDialog() }) { Text("Close") }
-                        },
+        }
+    ) {
+        Scaffold(
+            snackbarHost = {
+                SnackbarHost(snackbarHostState) { data ->
+                    Snackbar(
+                        snackbarData = data,
+                        containerColor = TeslaPrimary,
+                        contentColor = Color.White,
                         shape = RoundedCornerShape(16.dp),
-                        containerColor = Color.White
+                        modifier = Modifier
+                            .padding(vertical = 8.dp)
+                            .heightIn(min = 64.dp)
                     )
                 }
+            },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Tesla App", color = Color.White)
+                            VehicleDropdown(viewModel, vehicles, selectedVehicle)
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Filled.Menu, contentDescription = "Open Menu", tint = Color.White)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = TeslaPrimary,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    )
+                )
+            },
+            bottomBar = { StatusBar(statusText = statusText) },
+            modifier = Modifier.fillMaxSize()
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+            ) {
+                item { Spacer(modifier = Modifier.height(110.dp)) }
+                item { GridButtons(viewModel) }
+                item { OutputPanel(viewModel) }
             }
+            OverlayContent(overlayState, viewModel, navController, context)
         }
-    )
+    }
 }
 
 /**
- * Vehicle selection dropdown adapted for the TopAppBar title section.
+ * Vehicle selection dropdown adapted for the TopAppBar title section
  */
 @Composable
 private fun VehicleDropdown(
@@ -349,16 +378,14 @@ private fun VehicleDropdown(
                     onClick = { expanded = false },
                     enabled = false
                 )
-            } else {
-                vehicles.forEach { vehicle ->
-                    DropdownMenuItem(
-                        text = { Text("${vehicle.displayName}: ${vehicle.vin}") },
-                        onClick = {
-                            viewModel.selectVehicle(vehicle)
-                            expanded = false
-                        }
-                    )
-                }
+            } else vehicles.forEach { vehicle ->
+                DropdownMenuItem(
+                    text = { Text("${vehicle.displayName}: ${vehicle.vin}") },
+                    onClick = {
+                        viewModel.selectVehicle(vehicle)
+                        expanded = false
+                    }
+                )
             }
         }
     }
