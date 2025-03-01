@@ -55,13 +55,9 @@ fun AboutDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // tesla app icon (replace with actual tesla logo/icon from resources)
+                    // tesla app icon
                     Icon(
-                            imageVector = Icons.Default.DirectionsCar, // placeholder; replace with tesla logo
-
-//                    // tesla app icon (replace with actual tesla logo/icon from resources)
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.tesla_logo), // Load Tesla logo from drawable resources
+                        painter = painterResource(id = R.drawable.car), // Load Tesla logo from drawable resources
                         contentDescription = "Tesla App Logo",
                         modifier = Modifier
                             .size(64.dp) // larger icon for prominence
