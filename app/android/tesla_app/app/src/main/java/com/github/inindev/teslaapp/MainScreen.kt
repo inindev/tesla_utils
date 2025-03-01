@@ -1,10 +1,7 @@
 package com.github.inindev.teslaapp
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,10 +60,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.github.inindev.teslaapp.ui.theme.TeslaPrimary
@@ -89,7 +82,8 @@ private fun OverlayContent(
     state: OverlayState,
     viewModel: MainViewModel,
     navController: NavHostController,
-    context: Context
+    context: Context,
+    onDismissSettingsInvalid: () -> Unit // Callback to dismiss the settings dialog
 ) {
     when (state) {
         OverlayState.SettingsInvalid -> {
@@ -100,7 +94,7 @@ private fun OverlayContent(
                     .background(Color.Black)
             ) {
                 AlertDialog(
-                    onDismissRequest = { /* no dismiss action */ },
+                    onDismissRequest = { onDismissSettingsInvalid() },
                     title = { Text("Settings Update Required", style = MaterialTheme.typography.headlineSmall) },
                     text = { Text("Please update your settings to continue.") },
                     confirmButton = {
@@ -109,7 +103,7 @@ private fun OverlayContent(
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { /* no action */ }) {
+                        TextButton(onClick = { onDismissSettingsInvalid() }) {
                             Text("Cancel")
                         }
                     },
@@ -171,11 +165,19 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val showLoginDialog by viewModel.showLoginDialog.collectAsState()
     val showAboutDialog by viewModel.showAboutDialog.collectAsState()
 
+    // Local state to control the settings dialog visibility
+    var showSettingsInvalidDialog by remember { mutableStateOf(!settingsValid) }
+
+    // Reset dialog visibility when settingsValid changes
+    LaunchedEffect(settingsValid) {
+        showSettingsInvalidDialog = !settingsValid
+    }
+
     // compute the current overlay state based on conditions
     val overlayState by remember {
         derivedStateOf {
             when {
-                !settingsValid -> OverlayState.SettingsInvalid
+                showSettingsInvalidDialog && !settingsValid -> OverlayState.SettingsInvalid
                 showLoginDialog -> OverlayState.LoginDialog
                 showAboutDialog -> OverlayState.AboutDialog
                 else -> OverlayState.None
@@ -290,7 +292,13 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                 item { GridButtons(viewModel) }
                 item { OutputPanel(viewModel) }
             }
-            OverlayContent(overlayState, viewModel, navController, context)
+            OverlayContent(
+                state = overlayState,
+                viewModel = viewModel,
+                navController = navController,
+                context = context,
+                onDismissSettingsInvalid = { showSettingsInvalidDialog = false }
+            )
         }
     }
 }
