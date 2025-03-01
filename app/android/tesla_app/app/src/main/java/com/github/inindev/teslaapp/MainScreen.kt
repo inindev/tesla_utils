@@ -147,41 +147,7 @@ private fun OverlayContent(
             }
         }
         OverlayState.AboutDialog -> {
-            AlertDialog(
-                onDismissRequest = { viewModel.hideAboutDialog() },
-                title = {
-                    Column {
-                        Text("About Tesla App", style = MaterialTheme.typography.headlineSmall)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Version: 0.7", style = MaterialTheme.typography.bodyMedium)
-                        Text("Copyright (c) 2025, John Clark <inindev@gmail.com>", style = MaterialTheme.typography.bodyMedium)
-                    }
-                },
-                text = {
-                    Column {
-                        Text("A third-party Tesla vehicle control app using the Tesla Fleet API.")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            buildAnnotatedString {
-                                append("Visit ")
-                                withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)) {
-                                    append("Tesla Developer")
-                                }
-                                append(" for more information.")
-                            },
-                            modifier = Modifier.clickable {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://developer.tesla.com"))
-                                context.startActivity(intent)
-                            }
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(onClick = { viewModel.hideAboutDialog() }) { Text("Close") }
-                },
-                shape = RoundedCornerShape(16.dp),
-                containerColor = Color.White
-            )
+            AboutDialog(viewModel = viewModel, onDismiss = { viewModel.hideAboutDialog() })
         }
         OverlayState.None -> {}
     }
