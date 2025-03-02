@@ -1,6 +1,7 @@
 package com.github.inindev.teslaapp
 
 import android.content.Context
+import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,8 +40,14 @@ class MainViewModel(
     private val _showAboutDialog = MutableStateFlow(false)
     val showAboutDialog: StateFlow<Boolean> = _showAboutDialog.asStateFlow()
 
+    private val _commandInProgress = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val commandInProgress: StateFlow<Map<String, Boolean>> = _commandInProgress.asStateFlow()
+
     private val _showLoginDialog = MutableStateFlow(false)
     val showLoginDialog: StateFlow<Boolean> = _showLoginDialog.asStateFlow()
+
+    // expose proxyApi for GridButtons
+    val proxyApiInstance: TeslaProxyFleetApi? get() = proxyApi
 
     // vehicle data class
     data class Vehicle(
@@ -279,6 +286,7 @@ class MainViewModel(
             return
         }
         preFlight()
+        setCommandLoading(operation, true)
         viewModelScope.launch {
             try {
                 if (requiresOnlineVehicle) {
@@ -288,7 +296,6 @@ class MainViewModel(
                         return@launch
                     }
                 }
-
                 when (val result = operation()) {
                     is HttpResult.Success -> {
                         onSuccess(result.data)
@@ -307,6 +314,19 @@ class MainViewModel(
                 }
             } catch (e: Exception) {
                 onFailure("unexpected error: ${e.message ?: "error occurred"}")
+            }
+        }.invokeOnCompletion {
+            setCommandLoading(operation, false)
+        }
+    }
+
+    // update the loading state of a command in the commandInProgress flow
+    private fun setCommandLoading(operation: suspend () -> HttpResult, isLoading: Boolean) {
+        viewModelScope.launch {
+            val key = operation.javaClass.name.split("$")[1] // e.g., "com.github.inindev.teslaapp.MainViewModel$flashLights$2"
+            Log.d("MainViewModel", "Setting command '$key' loading: $isLoading")
+            _commandInProgress.value = _commandInProgress.value.toMutableMap().apply {
+                if (isLoading) put(key, true) else remove(key)
             }
         }
     }

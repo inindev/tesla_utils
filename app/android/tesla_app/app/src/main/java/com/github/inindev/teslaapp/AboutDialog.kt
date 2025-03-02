@@ -18,8 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import com.github.inindev.teslaapp.ui.theme.TeslaRed
@@ -57,7 +55,7 @@ fun AboutDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                 ) {
                     // tesla app icon
                     Icon(
-                        painter = painterResource(id = R.drawable.car), // Load Tesla logo from drawable resources
+                        painter = painterResource(id = R.drawable.car), // load tesla logo from drawable resources
                         contentDescription = "Tesla App Logo",
                         modifier = Modifier
                             .size(64.dp) // larger icon for prominence

@@ -165,12 +165,12 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val showLoginDialog by viewModel.showLoginDialog.collectAsState()
     val showAboutDialog by viewModel.showAboutDialog.collectAsState()
 
-    // Local state to control the settings dialog visibility
-    var showSettingsInvalidDialog by remember { mutableStateOf(!settingsValid) }
+    // local state to control the settings dialog visibility
+    var showSettingsInvalidDialog by remember { mutableStateOf(false) }
 
-    // Reset dialog visibility when settingsValid changes
+    // reset dialog visibility when settingsValid changes
     LaunchedEffect(settingsValid) {
-        showSettingsInvalidDialog = !settingsValid
+        showSettingsInvalidDialog = settingsValid == false
     }
 
     // compute the current overlay state based on conditions
