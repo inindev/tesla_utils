@@ -1,6 +1,7 @@
 package com.github.inindev.teslaapp
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -68,10 +69,10 @@ import kotlinx.coroutines.launch
 
 // defines possible overlay states for the mainscreen ui
 sealed class OverlayState {
-    object None : OverlayState()
-    object LoginDialog : OverlayState()
-    object AboutDialog : OverlayState()
-    object SettingsInvalid : OverlayState()
+    data object None : OverlayState()
+    data object LoginDialog : OverlayState()
+    data object AboutDialog : OverlayState()
+    data object SettingsInvalid : OverlayState()
 }
 
 /**
@@ -83,7 +84,8 @@ private fun OverlayContent(
     viewModel: MainViewModel,
     navController: NavHostController,
     context: Context,
-    onDismissSettingsInvalid: () -> Unit // Callback to dismiss the settings dialog
+    onDismissLogin: () -> Unit,
+    onDismissSettingsInvalid: () -> Unit
 ) {
     when (state) {
         OverlayState.SettingsInvalid -> {
@@ -94,7 +96,10 @@ private fun OverlayContent(
                     .background(Color.Black)
             ) {
                 AlertDialog(
-                    onDismissRequest = { onDismissSettingsInvalid() },
+                    onDismissRequest = {
+                        Log.d("OverlayContent", "settings dialog dismissed via outside click")
+                        //onDismissSettingsInvalid()
+                    },
                     title = { Text("Settings Update Required", style = MaterialTheme.typography.headlineSmall) },
                     text = { Text("Please update your settings to continue.") },
                     confirmButton = {
@@ -103,7 +108,10 @@ private fun OverlayContent(
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { onDismissSettingsInvalid() }) {
+                        TextButton(onClick = {
+                            Log.d("OverlayContent", "settings dialog dismissed via cancel button")
+                            onDismissSettingsInvalid()
+                        }) {
                             Text("Cancel")
                         }
                     },
@@ -121,7 +129,10 @@ private fun OverlayContent(
                     .background(Color.Black)
             ) {
                 AlertDialog(
-                    onDismissRequest = { viewModel.hideLoginDialog() },
+                    onDismissRequest = {
+                        Log.d("OverlayContent", "login dialog dismissed via outside click")
+                        //onDismissLogin()
+                    },
                     title = { Text("Login Required", style = MaterialTheme.typography.headlineSmall) },
                     text = { Text("You need to log in to access vehicle controls.") },
                     confirmButton = {
@@ -130,7 +141,10 @@ private fun OverlayContent(
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { viewModel.hideLoginDialog() }) {
+                        TextButton(onClick = {
+                            Log.d("OverlayContent", "login dialog dismissed via cancel button")
+                            onDismissLogin()
+                        }) {
                             Text("Cancel")
                         }
                     },
@@ -141,7 +155,7 @@ private fun OverlayContent(
             }
         }
         OverlayState.AboutDialog -> {
-            AboutDialog(viewModel = viewModel, onDismiss = { viewModel.hideAboutDialog() })
+            AboutDialog(onDismiss = { viewModel.hideAboutDialog() })
         }
         OverlayState.None -> {}
     }
@@ -162,27 +176,35 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarMessage = viewModel.snackbarMessage.collectAsState().value
     val settingsValid by viewModel.settingsValid.collectAsState()
-    val showLoginDialog by viewModel.showLoginDialog.collectAsState()
     val showAboutDialog by viewModel.showAboutDialog.collectAsState()
 
-    // local state to control the settings dialog visibility
-    var showSettingsInvalidDialog by remember { mutableStateOf(false) }
+    // explicit state to control dialog visibility
+    var showLoginDialog by remember { mutableStateOf(settingsValid && !viewModel.isAuthenticated()) }
+    var showSettingsInvalidDialog by remember { mutableStateOf(!settingsValid) }
 
-    // reset dialog visibility when settingsValid changes
-    LaunchedEffect(settingsValid) {
-        showSettingsInvalidDialog = settingsValid == false
+    // update dialog visibility based on conditions
+    LaunchedEffect(settingsValid, viewModel.isAuthenticated()) {
+        showLoginDialog = settingsValid && !viewModel.isAuthenticated()
+        showSettingsInvalidDialog = !settingsValid
+        Log.d("MainScreen", "Updated dialogs: showLoginDialog=$showLoginDialog, showSettingsInvalidDialog=$showSettingsInvalidDialog (settingsValid=$settingsValid, isAuthenticated=${viewModel.isAuthenticated()})")
     }
 
     // compute the current overlay state based on conditions
-    val overlayState by remember {
+    val overlayState by remember(settingsValid, showAboutDialog, showLoginDialog, showSettingsInvalidDialog) {
         derivedStateOf {
+            Log.d("MainScreen", "Evaluating overlayState: settingsValid=$settingsValid, showAboutDialog=$showAboutDialog, showLoginDialog=$showLoginDialog, showSettingsInvalidDialog=$showSettingsInvalidDialog")
             when {
-                showSettingsInvalidDialog && !settingsValid -> OverlayState.SettingsInvalid
-                showLoginDialog -> OverlayState.LoginDialog
                 showAboutDialog -> OverlayState.AboutDialog
+                showSettingsInvalidDialog -> OverlayState.SettingsInvalid
+                showLoginDialog -> OverlayState.LoginDialog
                 else -> OverlayState.None
             }
         }
+    }
+
+    // log overlay state changes for debugging
+    LaunchedEffect(overlayState) {
+        Log.d("MainScreen", "overlayState changed to: ${overlayState.javaClass.simpleName}")
     }
 
     // show snackbar when message changes
@@ -297,6 +319,7 @@ fun MainScreen(navController: NavHostController, viewModel: MainViewModel) {
                 viewModel = viewModel,
                 navController = navController,
                 context = context,
+                onDismissLogin = { showLoginDialog = false },
                 onDismissSettingsInvalid = { showSettingsInvalidDialog = false }
             )
         }

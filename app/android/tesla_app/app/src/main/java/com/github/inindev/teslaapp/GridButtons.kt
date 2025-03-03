@@ -32,7 +32,7 @@ private fun CommandButton(
     commandInProgress: Map<String, Boolean>,
     modifier: Modifier = Modifier
 ) {
-    var key: String = ""
+    var key = ""
     try {
         val getNameMethod = onClick::class.java.getMethod("getName")
         key = getNameMethod.invoke(onClick) as String

@@ -79,6 +79,12 @@ fun SettingsScreen(
         backupSettings.value = settingsViewModel.settingsState.value // Capture initial state
     }
 
+    // validate settings when they change
+    LaunchedEffect(settings) {
+        val isValid = validator.validateSettings(settings)
+        mainViewModel.updateSettingsValid(isValid)
+    }
+
     Scaffold(
         bottomBar = { StatusBar(statusText = statusText) }
     ) { innerPadding ->
@@ -95,11 +101,7 @@ fun SettingsScreen(
                 ProxyUrlInput(
                     value = settings.proxyUrl,
                     backupValue = backupSettings.value.proxyUrl,
-                    onValueChange = { newValue ->
-                        val trimmedValue = newValue.trimEnd('/')
-                        settingsViewModel.updateProxyUrl(trimmedValue)
-                        mainViewModel.updateProxyUrl(trimmedValue)
-                    },
+                    onValueChange = { settingsViewModel.updateProxyUrl(it) },
                     validator = validator
                 )
 

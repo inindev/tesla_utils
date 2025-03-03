@@ -47,14 +47,12 @@ class MainActivity : ComponentActivity() {
                 mainViewModel.updateSettingsValid(isValid)
                 Log.d("MainActivity", "Initial settings valid: $isValid, has token: $hasToken")
 
-                if (isValid && !hasToken) {
-                    mainViewModel.showLoginDialog()
-                } else if (hasToken) {
+                if (hasToken) {
                     withContext(Dispatchers.IO) {
                         mainViewModel.fetchVehicles()
                     }
                 } else {
-                    mainViewModel.updateStatusText("Status: Ready")
+                    mainViewModel.updateStatusText("Status: Ready - Please authenticate")
                 }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Startup error: ${e.message}", e)
@@ -100,7 +98,6 @@ class MainActivity : ComponentActivity() {
             when (result) {
                 is OAuth2Client.AuthResult.Success -> {
                     mainViewModel.updateStatusText("Authentication successful")
-                    mainViewModel.hideLoginDialog() // close dialog on success
                     // fetch vehicles after successful login
                     withContext(Dispatchers.IO) {
                         mainViewModel.fetchVehicles()

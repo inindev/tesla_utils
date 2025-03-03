@@ -10,7 +10,7 @@ import androidx.security.crypto.MasterKey
  * EncryptedSharedPreferences with AES-256 encryption. Manages client credentials,
  * tokens, OAuth state, ensuring no blank strings are stored.
  */
-class SecureStorage(private val context: Context) {
+class SecureStorage(context: Context) {
     private val sharedPreferences = EncryptedSharedPreferences.create(
         context,
         "secret_shared_prefs",

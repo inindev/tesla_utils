@@ -43,18 +43,17 @@ class MainViewModel(
     private val _commandInProgress = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val commandInProgress: StateFlow<Map<String, Boolean>> = _commandInProgress.asStateFlow()
 
-    private val _showLoginDialog = MutableStateFlow(false)
-    val showLoginDialog: StateFlow<Boolean> = _showLoginDialog.asStateFlow()
-
-    // expose proxyApi for GridButtons
-    val proxyApiInstance: TeslaProxyFleetApi? get() = proxyApi
-
     // vehicle data class
     data class Vehicle(
         val id: Long,
         val vin: String,
         val displayName: String
     )
+
+    // check if the user is authenticated (has a valid access token)
+    fun isAuthenticated(): Boolean {
+        return oauth2Client.getAccessToken() != null
+    }
 
     // update selected vehicle and create proxy api
     fun selectVehicle(vehicle: Vehicle) {
@@ -67,31 +66,12 @@ class MainViewModel(
         }
     }
 
-    // update proxy url and recreate proxy api if a vehicle is selected
-    fun updateProxyUrl(proxyUrl: String) {
-        viewModelScope.launch {
-            val currentVehicle = _selectedVehicle.value
-            if (currentVehicle != null) {
-                proxyApi = TeslaProxyFleetApi(proxyUrl, currentVehicle.vin, oauth2Client)
-                updateStatusText("Proxy URL updated for vehicle: ${currentVehicle.displayName}")
-            }
-        }
-    }
-
     fun showAboutDialog() {
         viewModelScope.launch { _showAboutDialog.value = true }
     }
 
     fun hideAboutDialog() {
         viewModelScope.launch { _showAboutDialog.value = false }
-    }
-
-    fun showLoginDialog() {
-        viewModelScope.launch { _showLoginDialog.value = true }
-    }
-
-    fun hideLoginDialog() {
-        viewModelScope.launch { _showLoginDialog.value = false }
     }
 
     fun logout() {
@@ -102,8 +82,7 @@ class MainViewModel(
             _selectedVehicle.value = null
             _settingsValid.value = false
             updateStatusText("Logged out successfully")
-            _snackbarMessage.value = "Logged out. Please re-authenticate to continue."
-            showLoginDialog()
+            _snackbarMessage.value = "Logged out - Please re-authenticate"
         }
     }
 
@@ -262,7 +241,6 @@ class MainViewModel(
     fun initiateAuthFlow(context: Context) {
         viewModelScope.launch {
             try {
-                showLoginDialog()
                 updateStatusText("Authentication process started...")
                 val authUri = oauth2Client.initiateAuthFlow()
                 val customTabsIntent = CustomTabsIntent.Builder().build()

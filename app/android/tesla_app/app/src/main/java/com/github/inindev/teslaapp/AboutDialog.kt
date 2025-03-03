@@ -26,12 +26,11 @@ import com.github.inindev.teslaapp.ui.theme.TeslaRed
  * Displays a professional and branded About dialog for the Tesla App, featuring animations and Tesla-specific branding.
  * Includes accessibility enhancements for screen readers and touch targets.
  *
- * @param viewModel The MainViewModel managing the dialog state.
  * @param onDismiss Callback to dismiss the dialog.
  */
 @Composable
-fun AboutDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
-    // use animatedvisibility for a smooth fade-in/out effect
+fun AboutDialog(onDismiss: () -> Unit) {
+    // use AnimatedVisibility for a smooth fade-in/out effect
     AnimatedVisibility(
         visible = true,
         enter = fadeIn(animationSpec = tween(durationMillis = 300)),

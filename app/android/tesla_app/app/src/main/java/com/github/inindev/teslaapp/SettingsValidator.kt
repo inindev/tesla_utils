@@ -65,9 +65,9 @@ class SettingsValidator {
 
     fun validateProxyUrl(url: String): ValidationState {
         if (url.isEmpty()) return ValidationState.EMPTY
-        if (!url.startsWith("https://")) return ValidationState.INVALID
-        val hostRegex = Regex("^https://([a-zA-Z0-9.-]+)(/.*)?$")
-        return if (hostRegex.matches(url)) ValidationState.VALID else ValidationState.INVALID
+        if (url.length <= "https://".length && "https://".startsWith(url)) return ValidationState.VALID_BUT_INCOMPLETE
+        if (url.matches(Regex("^https://[a-zA-Z0-9.-]+(:[0-9]+)?(/[a-zA-Z0-9./-]*)*$"))) return ValidationState.VALID
+        return ValidationState.INVALID
     }
 
     fun validateClientId(uuid: String): ValidationState {
